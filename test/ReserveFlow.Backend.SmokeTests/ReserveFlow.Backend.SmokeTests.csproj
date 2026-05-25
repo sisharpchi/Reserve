@@ -1,0 +1,51 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Common\ReserveFlow.Common.Presentation\ReserveFlow.Common.Presentation.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Identity\ReserveFlow.Modules.Identity.Presentation\ReserveFlow.Modules.Identity.Presentation.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Tenants\ReserveFlow.Modules.Tenants.Presentation\ReserveFlow.Modules.Tenants.Presentation.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Catalog\ReserveFlow.Modules.Catalog.Presentation\ReserveFlow.Modules.Catalog.Presentation.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Staffing\ReserveFlow.Modules.Staffing.Presentation\ReserveFlow.Modules.Staffing.Presentation.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Resources\ReserveFlow.Modules.Resources.Presentation\ReserveFlow.Modules.Resources.Presentation.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Scheduling\ReserveFlow.Modules.Scheduling.Presentation\ReserveFlow.Modules.Scheduling.Presentation.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Bookings\ReserveFlow.Modules.Bookings.Presentation\ReserveFlow.Modules.Bookings.Presentation.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Notifications\ReserveFlow.Modules.Notifications.Presentation\ReserveFlow.Modules.Notifications.Presentation.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Audit\ReserveFlow.Modules.Audit.Presentation\ReserveFlow.Modules.Audit.Presentation.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Reporting\ReserveFlow.Modules.Reporting.Presentation\ReserveFlow.Modules.Reporting.Presentation.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Integrations\ReserveFlow.Modules.Integrations.Presentation\ReserveFlow.Modules.Integrations.Presentation.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Bookings\ReserveFlow.Modules.Bookings.Domain\ReserveFlow.Modules.Bookings.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Notifications\ReserveFlow.Modules.Notifications.Domain\ReserveFlow.Modules.Notifications.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Audit\ReserveFlow.Modules.Audit.Domain\ReserveFlow.Modules.Audit.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Reporting\ReserveFlow.Modules.Reporting.Domain\ReserveFlow.Modules.Reporting.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Integrations\ReserveFlow.Modules.Integrations.Domain\ReserveFlow.Modules.Integrations.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Bookings\ReserveFlow.Modules.Bookings.Application\ReserveFlow.Modules.Bookings.Application.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Notifications\ReserveFlow.Modules.Notifications.Application\ReserveFlow.Modules.Notifications.Application.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Audit\ReserveFlow.Modules.Audit.Application\ReserveFlow.Modules.Audit.Application.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Reporting\ReserveFlow.Modules.Reporting.Application\ReserveFlow.Modules.Reporting.Application.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Integrations\ReserveFlow.Modules.Integrations.Application\ReserveFlow.Modules.Integrations.Application.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Tenants\ReserveFlow.Modules.Tenants.Domain\ReserveFlow.Modules.Tenants.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Catalog\ReserveFlow.Modules.Catalog.Domain\ReserveFlow.Modules.Catalog.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Staffing\ReserveFlow.Modules.Staffing.Domain\ReserveFlow.Modules.Staffing.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Resources\ReserveFlow.Modules.Resources.Domain\ReserveFlow.Modules.Resources.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Scheduling\ReserveFlow.Modules.Scheduling.Domain\ReserveFlow.Modules.Scheduling.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Identity\ReserveFlow.Modules.Identity.Infrastructure\ReserveFlow.Modules.Identity.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Tenants\ReserveFlow.Modules.Tenants.Infrastructure\ReserveFlow.Modules.Tenants.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Catalog\ReserveFlow.Modules.Catalog.Infrastructure\ReserveFlow.Modules.Catalog.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Staffing\ReserveFlow.Modules.Staffing.Infrastructure\ReserveFlow.Modules.Staffing.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Resources\ReserveFlow.Modules.Resources.Infrastructure\ReserveFlow.Modules.Resources.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Scheduling\ReserveFlow.Modules.Scheduling.Infrastructure\ReserveFlow.Modules.Scheduling.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Bookings\ReserveFlow.Modules.Bookings.Infrastructure\ReserveFlow.Modules.Bookings.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Notifications\ReserveFlow.Modules.Notifications.Infrastructure\ReserveFlow.Modules.Notifications.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Audit\ReserveFlow.Modules.Audit.Infrastructure\ReserveFlow.Modules.Audit.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Reporting\ReserveFlow.Modules.Reporting.Infrastructure\ReserveFlow.Modules.Reporting.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Integrations\ReserveFlow.Modules.Integrations.Infrastructure\ReserveFlow.Modules.Integrations.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+</Project>

@@ -1,0 +1,7 @@
+{
+  "Bookings": {
+    "Outbox": {
+      "Enabled": true
+    }
+  }
+}

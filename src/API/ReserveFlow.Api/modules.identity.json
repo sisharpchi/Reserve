@@ -1,0 +1,9 @@
+{
+  "Identity": {
+    "Provider": "Keycloak",
+    "Realm": "reserveflow",
+    "Authority": "http://localhost:18080/realms/reserveflow",
+    "Audience": "reserveflow-api",
+    "WebClientId": "reserveflow-web"
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "Bookings": {
+    "Outbox": {
+      "BatchSize": 25,
+      "PollingIntervalSeconds": 5
+    }
+  }
+}

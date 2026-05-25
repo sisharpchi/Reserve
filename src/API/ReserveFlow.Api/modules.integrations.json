@@ -1,0 +1,7 @@
+{
+  "Integrations": {
+    "WebhookInbox": {
+      "Enabled": true
+    }
+  }
+}

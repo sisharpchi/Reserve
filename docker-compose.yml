@@ -1,0 +1,78 @@
+name: reserveflow
+
+services:
+  reserveflow.api:
+    image: reserveflow-api
+    container_name: ReserveFlow.Api
+    build:
+      context: .
+      dockerfile: src/API/ReserveFlow.Api/Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__Database: Host=reserveflow.database;Port=5432;Database=reserveflow;Username=postgres;Password=postgres
+      DatabaseInitializer__Enabled: "true"
+      Identity__Authority: http://reserveflow.identity:8080/realms/reserveflow
+      Identity__MetadataAddress: http://reserveflow.identity:8080/realms/reserveflow/.well-known/openid-configuration
+      Identity__Audience: reserveflow-api
+      Keycloak__HealthUrl: http://reserveflow.identity:8080/health/ready
+    ports:
+      - "5080:8080"
+    depends_on:
+      reserveflow.database:
+        condition: service_started
+      reserveflow.identity:
+        condition: service_started
+
+  reserveflow.database:
+    image: postgres:16
+    container_name: ReserveFlow.Database
+    environment:
+      POSTGRES_DB: reserveflow
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - ./.containers/postgres:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  reserveflow.identity:
+    image: quay.io/keycloak/keycloak:25.0
+    container_name: ReserveFlow.Identity
+    command: start-dev --import-realm
+    environment:
+      KC_HEALTH_ENABLED: "true"
+      KC_HTTP_ENABLED: "true"
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+    volumes:
+      - ./.containers/keycloak:/opt/keycloak/data
+      - ./.files/keycloak:/opt/keycloak/data/import
+    ports:
+      - "18080:8080"
+
+  reserveflow.seq:
+    image: datalust/seq:2024
+    container_name: ReserveFlow.Seq
+    profiles: ["observability"]
+    environment:
+      ACCEPT_EULA: "Y"
+    ports:
+      - "5341:5341"
+      - "8081:80"
+
+  reserveflow.redis:
+    image: redis:7
+    container_name: ReserveFlow.Redis
+    profiles: ["cache"]
+    ports:
+      - "6379:6379"
+
+  reserveflow.jaeger:
+    image: jaegertracing/all-in-one:1.57
+    container_name: ReserveFlow.Jaeger
+    profiles: ["observability"]
+    ports:
+      - "4317:4317"
+      - "4318:4318"
+      - "16686:16686"
