@@ -25,6 +25,7 @@ builder.Logging.AddEventSourceLogger();
 builder.Configuration.AddModuleConfiguration(["identity", "tenants", "catalog", "staffing", "resources", "scheduling", "bookings", "notifications", "audit", "reporting", "integrations"]);
 
 builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
 builder.Services.AddReserveFlowInfrastructure(builder.Configuration);
 
 builder.Services.AddIdentityModule(builder.Configuration);
@@ -40,6 +41,12 @@ builder.Services.AddReportingModule(builder.Configuration);
 builder.Services.AddIntegrationsModule(builder.Configuration);
 
 WebApplication app = builder.Build();
+
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
 
 app.UseExceptionHandler();
 app.UseCors(CorsPolicies.WebApp);

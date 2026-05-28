@@ -76,6 +76,21 @@ var checks = new List<(string Name, bool Passed)>
     ("api pipeline uses rate limiter", SourceContains(
         "src/API/ReserveFlow.Api/Program.cs",
         "UseRateLimiter")),
+    ("api references swashbuckle openapi package", SourceContains(
+        "src/API/ReserveFlow.Api/ReserveFlow.Api.csproj",
+        "Swashbuckle.AspNetCore")),
+    ("central packages pin swashbuckle openapi version", SourceContains(
+        "Directory.Packages.props",
+        "Swashbuckle.AspNetCore")),
+    ("api services register swagger generator", SourceContains(
+        "src/API/ReserveFlow.Api/Program.cs",
+        "AddSwaggerGen")),
+    ("api maps swagger json in development", SourceContains(
+        "src/API/ReserveFlow.Api/Program.cs",
+        "UseSwagger")),
+    ("api maps swagger ui in development", SourceContains(
+        "src/API/ReserveFlow.Api/Program.cs",
+        "UseSwaggerUI")),
     ("public booking create endpoint is rate limited", SourceContains(
         "src/Modules/Bookings/ReserveFlow.Modules.Bookings.Presentation/CreateBookingEndpoint.cs",
         "RequireRateLimiting(RateLimitPolicies.PublicBooking")),
@@ -110,6 +125,22 @@ var checks = new List<(string Name, bool Passed)>
     ("infrastructure registers tenant context abstraction", SourceContains(
         "src/Common/ReserveFlow.Common.Infrastructure/InfrastructureConfiguration.cs",
         "AddScoped<ITenantContext, HttpTenantContext>")),
+    ("database initializer can be configured to create missing database", SourceContains(
+        "src/Common/ReserveFlow.Common.Infrastructure/Data/DatabaseInitializerOptions.cs",
+        "CreateDatabaseIfMissing")),
+    ("database initializer exposes maintenance database option", SourceContains(
+        "src/Common/ReserveFlow.Common.Infrastructure/Data/DatabaseInitializerOptions.cs",
+        "MaintenanceDatabase")),
+    ("common infrastructure has postgres database bootstrapper", SourceContains(
+        "src/Common/ReserveFlow.Common.Infrastructure/Data/PostgresDatabaseBootstrapper.cs",
+        "class PostgresDatabaseBootstrapper")),
+    ("postgres database bootstrapper uses maintenance connection", PostgresDatabaseBootstrapperUsesMaintenanceConnection()),
+    ("database schema initializer creates database before schemas when enabled", SourceContains(
+        "src/Common/ReserveFlow.Common.Infrastructure/Data/DatabaseSchemaInitializerHostedService.cs",
+        "EnsureDatabaseExistsAsync")),
+    ("docker compose enables database bootstrap for local stack", SourceContains(
+        "docker-compose.yml",
+        "DatabaseInitializer__CreateDatabaseIfMissing: \"true\"")),
     ("common application has tenant access guard abstraction", typeof(ITenantAccessGuard).Name == nameof(ITenantAccessGuard)),
     ("common infrastructure has tenant access guard", typeof(TenantAccessGuard).Name == nameof(TenantAccessGuard)),
     ("tenant access guard allows current tenant", TenantAccessGuardAllowsCurrentTenant()),
@@ -1402,6 +1433,17 @@ static bool PublicCancelHandlerUsesPublicLookupAndPolicy()
     return SourceContains(handlerFile, "FindByPublicLookupAsync") &&
            SourceContains(handlerFile, "EnsureCancellationAllowed") &&
            SourceContains(handlerFile, "BookingHistoryEntry.Record");
+}
+
+static bool PostgresDatabaseBootstrapperUsesMaintenanceConnection()
+{
+    string bootstrapperFile = "src/Common/ReserveFlow.Common.Infrastructure/Data/PostgresDatabaseBootstrapper.cs";
+
+    return SourceContains(bootstrapperFile, "NpgsqlConnectionStringBuilder") &&
+           SourceContains(bootstrapperFile, "maintenanceBuilder") &&
+           SourceContains(bootstrapperFile, "maintenanceDatabase") &&
+           SourceContains(bootstrapperFile, "create database") &&
+           SourceContains(bootstrapperFile, "QuoteIdentifier");
 }
 
 static bool HandlerSourceHasTenantAccessGuard(string handlerFile)

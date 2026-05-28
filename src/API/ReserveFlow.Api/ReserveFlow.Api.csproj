@@ -1,6 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
   <ItemGroup>
+    <PackageReference Include="Swashbuckle.AspNetCore" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\Common\ReserveFlow.Common.Application\ReserveFlow.Common.Application.csproj" />
     <ProjectReference Include="..\..\Common\ReserveFlow.Common.Infrastructure\ReserveFlow.Common.Infrastructure.csproj" />
     <ProjectReference Include="..\..\Common\ReserveFlow.Common.Presentation\ReserveFlow.Common.Presentation.csproj" />

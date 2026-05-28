@@ -12,6 +12,8 @@ services:
       ASPNETCORE_URLS: http://+:8080
       ConnectionStrings__Database: Host=reserveflow.database;Port=5432;Database=reserveflow;Username=postgres;Password=postgres
       DatabaseInitializer__Enabled: "true"
+      DatabaseInitializer__CreateDatabaseIfMissing: "true"
+      DatabaseInitializer__MaintenanceDatabase: postgres
       Identity__Authority: http://reserveflow.identity:8080/realms/reserveflow
       Identity__MetadataAddress: http://reserveflow.identity:8080/realms/reserveflow/.well-known/openid-configuration
       Identity__Audience: reserveflow-api

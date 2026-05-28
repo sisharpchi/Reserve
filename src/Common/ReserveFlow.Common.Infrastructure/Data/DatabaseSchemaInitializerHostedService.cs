@@ -30,7 +30,17 @@ internal sealed class DatabaseSchemaInitializerHostedService(
             return;
         }
 
-        await using var connection = new NpgsqlConnection(connectionStringProvider.GetConnectionString());
+        string connectionString = connectionStringProvider.GetConnectionString();
+
+        if (options.Value.CreateDatabaseIfMissing)
+        {
+            await PostgresDatabaseBootstrapper.EnsureDatabaseExistsAsync(
+                connectionString,
+                options.Value.MaintenanceDatabase,
+                cancellationToken);
+        }
+
+        await using var connection = new NpgsqlConnection(connectionString);
         await connection.OpenAsync(cancellationToken);
 
         foreach (string schema in schemas)
