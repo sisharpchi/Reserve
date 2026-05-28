@@ -16,6 +16,7 @@ internal sealed class CreateStaffMemberEndpoint : IEndpoint
     {
         app.MapPost("/api/admin/staff", Handle)
             .RequireAuthorization(TenantAdminPolicy)
+            .RequireTenantAccess()
             .WithTags("Staffing")
             .WithName("CreateStaffMember");
     }

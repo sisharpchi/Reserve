@@ -16,6 +16,7 @@ internal sealed class RecordDailyBookingReportEndpoint : IEndpoint
     {
         app.MapPost("/api/admin/reports/daily-bookings", Handle)
             .RequireAuthorization(TenantAdminPolicy)
+            .RequireTenantAccess()
             .WithTags("Reporting")
             .WithName("RecordDailyBookingReport");
     }

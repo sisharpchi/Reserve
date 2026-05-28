@@ -4,4 +4,4 @@ namespace ReserveFlow.Modules.Bookings.Application.Bookings.MarkBookingAsNoShow;
 
 public sealed record MarkBookingAsNoShowCommand(
     Guid BookingId,
-    DateTimeOffset MarkedAtUtc) : ICommand<BookingResponse>;
+    DateTimeOffset MarkedAtUtc) : ICommand<BookingResponse?>;

@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Routing;
 using ReserveFlow.Common.Application.Messaging;
 using ReserveFlow.Common.Presentation.Endpoints;
 using ReserveFlow.Modules.Bookings.Application.Bookings;
-using ReserveFlow.Modules.Bookings.Application.Bookings.CancelBooking;
+using ReserveFlow.Modules.Bookings.Application.Bookings.CancelPublicBooking;
 
 namespace ReserveFlow.Modules.Bookings.Presentation;
 
@@ -13,20 +13,24 @@ internal sealed class PublicCancelBookingEndpoint : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapPost("/api/public/bookings/{bookingId:guid}/cancel", Handle)
+        app.MapPost("/api/public/bookings/{publicReference}/cancel", Handle)
             .WithTags("Public Bookings")
             .WithName("PublicCancelBooking");
     }
 
-    private static async Task<Ok<BookingResponse>> Handle(
-        Guid bookingId,
-        ICommandHandler<CancelBookingCommand, BookingResponse> handler,
+    private static async Task<Results<Ok<BookingResponse>, NotFound>> Handle(
+        string publicReference,
+        PublicCancelBookingRequest request,
+        ICommandHandler<CancelPublicBookingCommand, BookingResponse?> handler,
         CancellationToken cancellationToken)
     {
-        BookingResponse response = await handler.Handle(
-            new CancelBookingCommand(bookingId, DateTimeOffset.UtcNow, EnforcePolicy: true),
+        BookingResponse? response = await handler.Handle(
+            new CancelPublicBookingCommand(
+                publicReference,
+                request.AccessToken,
+                DateTimeOffset.UtcNow),
             cancellationToken);
 
-        return TypedResults.Ok(response);
+        return response is null ? TypedResults.NotFound() : TypedResults.Ok(response);
     }
 }

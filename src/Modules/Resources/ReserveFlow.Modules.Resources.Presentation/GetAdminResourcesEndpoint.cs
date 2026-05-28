@@ -17,6 +17,7 @@ internal sealed class GetAdminResourcesEndpoint : IEndpoint
     {
         app.MapGet("/api/admin/resources", Handle)
             .RequireAuthorization(TenantAdminPolicy)
+            .RequireTenantAccess()
             .WithTags("Resources")
             .WithName("GetAdminResources");
     }

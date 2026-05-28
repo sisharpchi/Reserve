@@ -17,6 +17,7 @@ internal sealed class GetAdminStaffMembersEndpoint : IEndpoint
     {
         app.MapGet("/api/admin/staff", Handle)
             .RequireAuthorization(TenantAdminPolicy)
+            .RequireTenantAccess()
             .WithTags("Staffing")
             .WithName("GetAdminStaffMembers");
     }

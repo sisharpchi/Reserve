@@ -37,6 +37,26 @@ internal sealed class BookingRepository(BookingsDbContext dbContext) : IBookingR
             cancellationToken);
     }
 
+    public async Task<Booking?> FindByPublicLookupAsync(
+        string publicReference,
+        string accessToken,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(publicReference) ||
+            string.IsNullOrWhiteSpace(accessToken))
+        {
+            return null;
+        }
+
+        string normalizedPublicReference = Booking.NormalizePublicReference(publicReference);
+        string normalizedAccessToken = accessToken.Trim();
+
+        return await dbContext.Bookings.FirstOrDefaultAsync(
+            booking => booking.PublicReference == normalizedPublicReference &&
+                       booking.AccessToken == normalizedAccessToken,
+            cancellationToken);
+    }
+
     public async Task<bool> HasOverlapAsync(
         Guid tenantId,
         Guid? staffMemberId,

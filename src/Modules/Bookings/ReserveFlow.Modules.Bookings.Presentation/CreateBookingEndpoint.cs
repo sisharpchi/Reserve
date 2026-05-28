@@ -39,6 +39,6 @@ internal sealed class CreateBookingEndpoint : IEndpoint
                 request.EndsAtUtc),
             cancellationToken);
 
-        return TypedResults.Created($"/api/public/bookings/{response.Id}", response);
+        return TypedResults.Created($"/api/public/bookings/{response.PublicReference}", response);
     }
 }

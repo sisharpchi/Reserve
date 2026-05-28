@@ -15,6 +15,11 @@ public interface IBookingRepository
         string idempotencyKey,
         CancellationToken cancellationToken = default);
 
+    Task<Booking?> FindByPublicLookupAsync(
+        string publicReference,
+        string accessToken,
+        CancellationToken cancellationToken = default);
+
     Task<bool> HasOverlapAsync(
         Guid tenantId,
         Guid? staffMemberId,

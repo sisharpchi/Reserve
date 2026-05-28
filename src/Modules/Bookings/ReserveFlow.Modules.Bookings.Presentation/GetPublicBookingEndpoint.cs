@@ -5,29 +5,27 @@ using Microsoft.AspNetCore.Routing;
 using ReserveFlow.Common.Application.Messaging;
 using ReserveFlow.Common.Presentation.Endpoints;
 using ReserveFlow.Modules.Bookings.Application.Bookings;
-using ReserveFlow.Modules.Bookings.Application.Bookings.ExpirePendingBooking;
+using ReserveFlow.Modules.Bookings.Application.Bookings.GetPublicBooking;
 
 namespace ReserveFlow.Modules.Bookings.Presentation;
 
-internal sealed class ExpirePendingBookingEndpoint : IEndpoint
+internal sealed class GetPublicBookingEndpoint : IEndpoint
 {
-    private const string TenantAdminPolicy = "TenantAdmin";
-
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapPost("/api/admin/bookings/{bookingId:guid}/expire", Handle)
-            .RequireAuthorization(TenantAdminPolicy)
-            .WithTags("Bookings")
-            .WithName("ExpirePendingBooking");
+        app.MapGet("/api/public/bookings/{publicReference}", Handle)
+            .WithTags("Public Bookings")
+            .WithName("GetPublicBooking");
     }
 
     private static async Task<Results<Ok<BookingResponse>, NotFound>> Handle(
-        Guid bookingId,
-        ICommandHandler<ExpirePendingBookingCommand, BookingResponse?> handler,
+        string publicReference,
+        string accessToken,
+        IQueryHandler<GetPublicBookingQuery, BookingResponse?> handler,
         CancellationToken cancellationToken)
     {
         BookingResponse? response = await handler.Handle(
-            new ExpirePendingBookingCommand(bookingId, DateTimeOffset.UtcNow),
+            new GetPublicBookingQuery(publicReference, accessToken),
             cancellationToken);
 
         return response is null ? TypedResults.NotFound() : TypedResults.Ok(response);

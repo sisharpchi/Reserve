@@ -17,6 +17,7 @@ internal sealed class ConfigureBookingPolicyEndpoint : IEndpoint
     {
         app.MapPut("/api/admin/tenants/{tenantId:guid}/booking-policy", Handle)
             .RequireAuthorization(TenantAdminPolicy)
+            .RequireTenantAccess()
             .WithTags("Booking Policies")
             .WithName("ConfigureBookingPolicy");
     }

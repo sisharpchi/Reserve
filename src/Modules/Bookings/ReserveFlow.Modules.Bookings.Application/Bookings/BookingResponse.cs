@@ -12,6 +12,8 @@ public sealed record BookingResponse(
     DateTimeOffset StartsAtUtc,
     DateTimeOffset EndsAtUtc,
     string Status,
+    string PublicReference,
+    string AccessToken,
     Guid ConcurrencyToken)
 {
     public static BookingResponse FromBooking(Booking booking)
@@ -26,6 +28,8 @@ public sealed record BookingResponse(
             booking.StartsAtUtc,
             booking.EndsAtUtc,
             booking.Status.ToString(),
+            booking.PublicReference,
+            booking.AccessToken,
             booking.ConcurrencyToken);
     }
 }

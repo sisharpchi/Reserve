@@ -24,6 +24,8 @@ public sealed class Booking : Entity
         StartsAtUtc = startsAtUtc;
         EndsAtUtc = endsAtUtc;
         IdempotencyKey = idempotencyKey;
+        PublicReference = GeneratePublicReference();
+        AccessToken = GenerateAccessToken();
         ConcurrencyToken = Guid.NewGuid();
         Status = BookingStatus.Pending;
     }
@@ -49,6 +51,10 @@ public sealed class Booking : Entity
     public BookingStatus Status { get; private set; }
 
     public string? IdempotencyKey { get; private set; }
+
+    public string PublicReference { get; private set; } = string.Empty;
+
+    public string AccessToken { get; private set; } = string.Empty;
 
     public Guid ConcurrencyToken { get; private set; } = Guid.NewGuid();
 
@@ -86,6 +92,11 @@ public sealed class Booking : Entity
     public static string? NormalizeIdempotencyKey(string? idempotencyKey)
     {
         return string.IsNullOrWhiteSpace(idempotencyKey) ? null : idempotencyKey.Trim();
+    }
+
+    public static string NormalizePublicReference(string publicReference)
+    {
+        return publicReference.Trim().ToUpperInvariant();
     }
 
     public void Cancel(DateTimeOffset cancelledAtUtc)
@@ -241,5 +252,15 @@ public sealed class Booking : Entity
     private void RefreshConcurrencyToken()
     {
         ConcurrencyToken = Guid.NewGuid();
+    }
+
+    private static string GeneratePublicReference()
+    {
+        return $"RF-{Guid.NewGuid():N}"[..13].ToUpperInvariant();
+    }
+
+    private static string GenerateAccessToken()
+    {
+        return Guid.NewGuid().ToString("N");
     }
 }

@@ -17,6 +17,7 @@ internal sealed class QueueNotificationEndpoint : IEndpoint
     {
         app.MapPost("/api/admin/notifications", Handle)
             .RequireAuthorization(TenantAdminPolicy)
+            .RequireTenantAccess()
             .WithTags("Notifications")
             .WithName("QueueNotification");
     }

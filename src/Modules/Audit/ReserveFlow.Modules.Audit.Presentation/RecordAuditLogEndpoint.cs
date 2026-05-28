@@ -16,6 +16,7 @@ internal sealed class RecordAuditLogEndpoint : IEndpoint
     {
         app.MapPost("/api/admin/audit-logs", Handle)
             .RequireAuthorization(TenantAdminPolicy)
+            .RequireTenantAccess()
             .WithTags("Audit")
             .WithName("RecordAuditLog");
     }

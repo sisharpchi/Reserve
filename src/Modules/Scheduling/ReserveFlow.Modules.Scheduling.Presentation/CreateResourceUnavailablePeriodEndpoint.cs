@@ -16,6 +16,7 @@ internal sealed class CreateResourceUnavailablePeriodEndpoint : IEndpoint
     {
         app.MapPost("/api/admin/resources/{resourceId:guid}/unavailable-periods", Handle)
             .RequireAuthorization(TenantAdminPolicy)
+            .RequireTenantAccess()
             .WithTags("Scheduling")
             .WithName("CreateResourceUnavailablePeriod");
     }

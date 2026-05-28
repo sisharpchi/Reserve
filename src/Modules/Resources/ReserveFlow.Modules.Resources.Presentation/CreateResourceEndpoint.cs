@@ -16,6 +16,7 @@ internal sealed class CreateResourceEndpoint : IEndpoint
     {
         app.MapPost("/api/admin/resources", Handle)
             .RequireAuthorization(TenantAdminPolicy)
+            .RequireTenantAccess()
             .WithTags("Resources")
             .WithName("CreateResource");
     }

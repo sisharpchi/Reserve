@@ -1,3 +1,4 @@
+using ReserveFlow.Common.Application.Abstractions;
 using ReserveFlow.Common.Application.Messaging;
 using ReserveFlow.Modules.Resources.Domain.Resources;
 
@@ -5,6 +6,7 @@ namespace ReserveFlow.Modules.Resources.Application.Resources.DeactivateResource
 
 public sealed class DeactivateResourceCommandHandler(
     IResourceRepository resourceRepository,
+    ITenantAccessGuard tenantAccessGuard,
     IResourcesUnitOfWork unitOfWork) : ICommandHandler<DeactivateResourceCommand, ResourceResponse?>
 {
     public async Task<ResourceResponse?> Handle(
@@ -13,7 +15,7 @@ public sealed class DeactivateResourceCommandHandler(
     {
         Resource? resource = await resourceRepository.GetByIdAsync(command.ResourceId, cancellationToken);
 
-        if (resource is null)
+        if (resource is null || !tenantAccessGuard.CanAccessTenant(resource.TenantId))
         {
             return null;
         }

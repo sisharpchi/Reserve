@@ -17,6 +17,7 @@ internal sealed class GetAdminServicesEndpoint : IEndpoint
     {
         app.MapGet("/api/admin/services", Handle)
             .RequireAuthorization(TenantAdminPolicy)
+            .RequireTenantAccess()
             .WithTags("Catalog")
             .WithName("GetAdminServices");
     }

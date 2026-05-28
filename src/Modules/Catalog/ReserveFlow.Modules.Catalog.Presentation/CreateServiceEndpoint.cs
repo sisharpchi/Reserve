@@ -16,6 +16,7 @@ internal sealed class CreateServiceEndpoint : IEndpoint
     {
         app.MapPost("/api/admin/services", Handle)
             .RequireAuthorization(TenantAdminPolicy)
+            .RequireTenantAccess()
             .WithTags("Catalog")
             .WithName("CreateService");
     }

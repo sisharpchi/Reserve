@@ -4,4 +4,4 @@ namespace ReserveFlow.Modules.Bookings.Application.Bookings.ConfirmBooking;
 
 public sealed record ConfirmBookingCommand(
     Guid BookingId,
-    DateTimeOffset ConfirmedAtUtc) : ICommand<BookingResponse>;
+    DateTimeOffset ConfirmedAtUtc) : ICommand<BookingResponse?>;

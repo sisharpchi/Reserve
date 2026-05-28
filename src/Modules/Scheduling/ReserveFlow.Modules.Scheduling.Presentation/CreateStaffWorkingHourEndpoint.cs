@@ -16,6 +16,7 @@ internal sealed class CreateStaffWorkingHourEndpoint : IEndpoint
     {
         app.MapPost("/api/admin/staff/{staffMemberId:guid}/working-hours", Handle)
             .RequireAuthorization(TenantAdminPolicy)
+            .RequireTenantAccess()
             .WithTags("Scheduling")
             .WithName("CreateStaffWorkingHour");
     }

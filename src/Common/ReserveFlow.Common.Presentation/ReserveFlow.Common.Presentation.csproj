@@ -1,6 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
+    <ProjectReference Include="..\ReserveFlow.Common.Application\ReserveFlow.Common.Application.csproj" />
     <ProjectReference Include="..\ReserveFlow.Common.Domain\ReserveFlow.Common.Domain.csproj" />
   </ItemGroup>
 

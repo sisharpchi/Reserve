@@ -1,3 +1,4 @@
+using ReserveFlow.Common.Application.Abstractions;
 using ReserveFlow.Common.Application.Messaging;
 using ReserveFlow.Modules.Bookings.Application.BookingHistory;
 using ReserveFlow.Modules.Bookings.Domain.BookingHistory;
@@ -9,14 +10,20 @@ public sealed class RescheduleBookingCommandHandler(
     IBookingRepository bookingRepository,
     IBookingAvailabilityChecker availabilityChecker,
     IBookingHistoryRepository bookingHistoryRepository,
-    IBookingsUnitOfWork unitOfWork) : ICommandHandler<RescheduleBookingCommand, BookingResponse>
+    ITenantAccessGuard tenantAccessGuard,
+    IBookingsUnitOfWork unitOfWork) : ICommandHandler<RescheduleBookingCommand, BookingResponse?>
 {
-    public async Task<BookingResponse> Handle(
+    public async Task<BookingResponse?> Handle(
         RescheduleBookingCommand command,
         CancellationToken cancellationToken = default)
     {
         Booking booking = await bookingRepository.GetByIdAsync(command.BookingId, cancellationToken)
             ?? throw new InvalidOperationException("Booking was not found.");
+
+        if (!tenantAccessGuard.CanAccessTenant(booking.TenantId))
+        {
+            return null;
+        }
 
         bool isAvailable = await availabilityChecker.IsAvailableAsync(
             booking.TenantId,

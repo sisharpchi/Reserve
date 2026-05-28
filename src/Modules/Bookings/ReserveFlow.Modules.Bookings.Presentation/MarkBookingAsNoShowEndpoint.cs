@@ -21,15 +21,15 @@ internal sealed class MarkBookingAsNoShowEndpoint : IEndpoint
             .WithName("MarkBookingAsNoShow");
     }
 
-    private static async Task<Ok<BookingResponse>> Handle(
+    private static async Task<Results<Ok<BookingResponse>, NotFound>> Handle(
         Guid bookingId,
-        ICommandHandler<MarkBookingAsNoShowCommand, BookingResponse> handler,
+        ICommandHandler<MarkBookingAsNoShowCommand, BookingResponse?> handler,
         CancellationToken cancellationToken)
     {
-        BookingResponse response = await handler.Handle(
+        BookingResponse? response = await handler.Handle(
             new MarkBookingAsNoShowCommand(bookingId, DateTimeOffset.UtcNow),
             cancellationToken);
 
-        return TypedResults.Ok(response);
+        return response is null ? TypedResults.NotFound() : TypedResults.Ok(response);
     }
 }

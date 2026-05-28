@@ -17,6 +17,7 @@ internal sealed class GetDailyBookingReportEndpoint : IEndpoint
     {
         app.MapGet("/api/admin/reports/daily-bookings", Handle)
             .RequireAuthorization(TenantAdminPolicy)
+            .RequireTenantAccess()
             .WithTags("Reporting")
             .WithName("GetDailyBookingReport");
     }

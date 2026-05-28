@@ -1,3 +1,4 @@
+using ReserveFlow.Common.Application.Abstractions;
 using ReserveFlow.Common.Application.Messaging;
 using ReserveFlow.Modules.Staffing.Domain.StaffMembers;
 
@@ -5,6 +6,7 @@ namespace ReserveFlow.Modules.Staffing.Application.StaffMembers.DeactivateStaffM
 
 public sealed class DeactivateStaffMemberCommandHandler(
     IStaffMemberRepository staffMemberRepository,
+    ITenantAccessGuard tenantAccessGuard,
     IStaffingUnitOfWork unitOfWork) : ICommandHandler<DeactivateStaffMemberCommand, StaffMemberResponse?>
 {
     public async Task<StaffMemberResponse?> Handle(
@@ -13,7 +15,7 @@ public sealed class DeactivateStaffMemberCommandHandler(
     {
         StaffMember? staffMember = await staffMemberRepository.GetByIdAsync(command.StaffMemberId, cancellationToken);
 
-        if (staffMember is null)
+        if (staffMember is null || !tenantAccessGuard.CanAccessTenant(staffMember.TenantId))
         {
             return null;
         }

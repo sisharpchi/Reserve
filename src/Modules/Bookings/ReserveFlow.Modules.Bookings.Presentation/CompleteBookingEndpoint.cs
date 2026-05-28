@@ -21,15 +21,15 @@ internal sealed class CompleteBookingEndpoint : IEndpoint
             .WithName("CompleteBooking");
     }
 
-    private static async Task<Ok<BookingResponse>> Handle(
+    private static async Task<Results<Ok<BookingResponse>, NotFound>> Handle(
         Guid bookingId,
-        ICommandHandler<CompleteBookingCommand, BookingResponse> handler,
+        ICommandHandler<CompleteBookingCommand, BookingResponse?> handler,
         CancellationToken cancellationToken)
     {
-        BookingResponse response = await handler.Handle(
+        BookingResponse? response = await handler.Handle(
             new CompleteBookingCommand(bookingId, DateTimeOffset.UtcNow),
             cancellationToken);
 
-        return TypedResults.Ok(response);
+        return response is null ? TypedResults.NotFound() : TypedResults.Ok(response);
     }
 }

@@ -1,3 +1,4 @@
+using ReserveFlow.Common.Application.Abstractions;
 using ReserveFlow.Common.Application.Messaging;
 using ReserveFlow.Modules.Bookings.Application.BookingPolicies;
 using ReserveFlow.Modules.Bookings.Application.BookingHistory;
@@ -11,14 +12,20 @@ public sealed class CancelBookingCommandHandler(
     IBookingRepository bookingRepository,
     IBookingPolicyRepository bookingPolicyRepository,
     IBookingHistoryRepository bookingHistoryRepository,
-    IBookingsUnitOfWork unitOfWork) : ICommandHandler<CancelBookingCommand, BookingResponse>
+    ITenantAccessGuard tenantAccessGuard,
+    IBookingsUnitOfWork unitOfWork) : ICommandHandler<CancelBookingCommand, BookingResponse?>
 {
-    public async Task<BookingResponse> Handle(
+    public async Task<BookingResponse?> Handle(
         CancelBookingCommand command,
         CancellationToken cancellationToken = default)
     {
         Booking booking = await bookingRepository.GetByIdAsync(command.BookingId, cancellationToken)
             ?? throw new InvalidOperationException("Booking was not found.");
+
+        if (command.EnforceTenantAccess && !tenantAccessGuard.CanAccessTenant(booking.TenantId))
+        {
+            return null;
+        }
 
         if (command.EnforcePolicy)
         {

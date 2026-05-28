@@ -6,9 +6,11 @@ using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
+using ReserveFlow.Common.Application.Abstractions;
 using ReserveFlow.Common.Application.Data;
 using ReserveFlow.Common.Application.RateLimiting;
 using ReserveFlow.Common.Infrastructure.Data;
+using ReserveFlow.Common.Infrastructure.Identity;
 
 namespace ReserveFlow.Common.Infrastructure;
 
@@ -41,6 +43,10 @@ public static class InfrastructureConfiguration
             });
         });
 
+        services.AddHttpContextAccessor();
+        services.AddScoped<ICurrentUser, HttpCurrentUser>();
+        services.AddScoped<ITenantContext, HttpTenantContext>();
+        services.AddScoped<ITenantAccessGuard, TenantAccessGuard>();
         services.AddSingleton<IDatabaseConnectionStringProvider, DatabaseConnectionStringProvider>();
         services.Configure<DatabaseInitializerOptions>(configuration.GetSection("DatabaseInitializer"));
         services.AddHostedService<DatabaseSchemaInitializerHostedService>();
@@ -127,9 +133,18 @@ public static class InfrastructureConfiguration
                             KeycloakRoles.TenantAdmin,
                             KeycloakRoles.Staff)));
 
-        services
+        IHealthChecksBuilder healthChecks = services
             .AddHealthChecks()
             .AddCheck<PostgresHealthCheck>("postgresql", tags: ["ready"]);
+
+        string? keycloakHealthUrl = configuration["Keycloak:HealthUrl"];
+
+        if (Uri.TryCreate(keycloakHealthUrl, UriKind.Absolute, out Uri? keycloakHealthUri))
+        {
+            services.Configure<KeycloakHealthCheckOptions>(options => options.HealthUrl = keycloakHealthUri);
+            services.AddHttpClient(KeycloakHealthCheck.HttpClientName);
+            healthChecks.AddCheck<KeycloakHealthCheck>("keycloak", tags: ["ready"]);
+        }
 
         return services;
     }

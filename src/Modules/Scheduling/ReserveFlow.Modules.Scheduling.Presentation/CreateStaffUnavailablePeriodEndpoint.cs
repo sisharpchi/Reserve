@@ -16,6 +16,7 @@ internal sealed class CreateStaffUnavailablePeriodEndpoint : IEndpoint
     {
         app.MapPost("/api/admin/staff/{staffMemberId:guid}/unavailable-periods", Handle)
             .RequireAuthorization(TenantAdminPolicy)
+            .RequireTenantAccess()
             .WithTags("Scheduling")
             .WithName("CreateStaffUnavailablePeriod");
     }

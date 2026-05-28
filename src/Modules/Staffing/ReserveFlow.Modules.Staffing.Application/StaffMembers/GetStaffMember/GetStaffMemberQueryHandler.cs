@@ -1,9 +1,12 @@
+using ReserveFlow.Common.Application.Abstractions;
 using ReserveFlow.Common.Application.Messaging;
 using ReserveFlow.Modules.Staffing.Domain.StaffMembers;
 
 namespace ReserveFlow.Modules.Staffing.Application.StaffMembers.GetStaffMember;
 
-public sealed class GetStaffMemberQueryHandler(IStaffMemberRepository staffMemberRepository)
+public sealed class GetStaffMemberQueryHandler(
+    IStaffMemberRepository staffMemberRepository,
+    ITenantAccessGuard tenantAccessGuard)
     : IQueryHandler<GetStaffMemberQuery, StaffMemberResponse?>
 {
     public async Task<StaffMemberResponse?> Handle(
@@ -12,6 +15,11 @@ public sealed class GetStaffMemberQueryHandler(IStaffMemberRepository staffMembe
     {
         StaffMember? staffMember = await staffMemberRepository.GetByIdAsync(query.StaffMemberId, cancellationToken);
 
-        return staffMember is null ? null : StaffMemberResponse.FromStaffMember(staffMember);
+        if (staffMember is null || !tenantAccessGuard.CanAccessTenant(staffMember.TenantId))
+        {
+            return null;
+        }
+
+        return StaffMemberResponse.FromStaffMember(staffMember);
     }
 }

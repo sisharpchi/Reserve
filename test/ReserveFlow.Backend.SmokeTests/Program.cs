@@ -1,4 +1,7 @@
 using System.Security.Claims;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Primitives;
+using ReserveFlow.Common.Application.Abstractions;
 using ReserveFlow.Common.Domain;
 using ReserveFlow.Common.Infrastructure;
 using ReserveFlow.Common.Presentation.Endpoints;
@@ -82,12 +85,42 @@ var checks = new List<(string Name, bool Passed)>
     ("auth me endpoint is rate limited", SourceContains(
         "src/Modules/Identity/ReserveFlow.Modules.Identity.Presentation/CurrentUserEndpoint.cs",
         "RequireRateLimiting(RateLimitPolicies.AuthContext")),
+    ("common infrastructure has keycloak health check", SourceContains(
+        "src/Common/ReserveFlow.Common.Infrastructure/Identity/KeycloakHealthCheck.cs",
+        "class KeycloakHealthCheck")),
+    ("common infrastructure registers keycloak readiness check", SourceContains(
+        "src/Common/ReserveFlow.Common.Infrastructure/InfrastructureConfiguration.cs",
+        "AddCheck<KeycloakHealthCheck>(\"keycloak\"")),
+    ("keycloak readiness check is conditional on configured health url", SourceContains(
+        "src/Common/ReserveFlow.Common.Infrastructure/InfrastructureConfiguration.cs",
+        "Keycloak:HealthUrl")),
     ("authorization policies require keycloak role assertions", SourceContains(
         "src/Common/ReserveFlow.Common.Infrastructure/InfrastructureConfiguration.cs",
         "KeycloakRoleClaims.HasAnyRole")),
     ("keycloak role parser accepts realm access roles", KeycloakRoleParserAcceptsRealmAccessRoles()),
     ("keycloak role parser accepts resource access roles", KeycloakRoleParserAcceptsResourceAccessRoles()),
     ("keycloak role parser accepts simple roles claims", KeycloakRoleParserAcceptsSimpleRoleClaims()),
+    ("common infrastructure has http current user", typeof(HttpCurrentUser).Name == nameof(HttpCurrentUser)),
+    ("common infrastructure has http tenant context", typeof(HttpTenantContext).Name == nameof(HttpTenantContext)),
+    ("http current user reads keycloak claims", HttpCurrentUserReadsKeycloakClaims()),
+    ("http tenant context reads tenant headers before claims", HttpTenantContextReadsTenantHeadersBeforeClaims()),
+    ("infrastructure registers current user abstraction", SourceContains(
+        "src/Common/ReserveFlow.Common.Infrastructure/InfrastructureConfiguration.cs",
+        "AddScoped<ICurrentUser, HttpCurrentUser>")),
+    ("infrastructure registers tenant context abstraction", SourceContains(
+        "src/Common/ReserveFlow.Common.Infrastructure/InfrastructureConfiguration.cs",
+        "AddScoped<ITenantContext, HttpTenantContext>")),
+    ("common application has tenant access guard abstraction", typeof(ITenantAccessGuard).Name == nameof(ITenantAccessGuard)),
+    ("common infrastructure has tenant access guard", typeof(TenantAccessGuard).Name == nameof(TenantAccessGuard)),
+    ("tenant access guard allows current tenant", TenantAccessGuardAllowsCurrentTenant()),
+    ("tenant access guard allows platform scope", TenantAccessGuardAllowsPlatformScope()),
+    ("tenant access guard denies different tenant", TenantAccessGuardDeniesDifferentTenant()),
+    ("common presentation has tenant access endpoint filter", typeof(TenantAccessEndpointFilter).Name == nameof(TenantAccessEndpointFilter)),
+    ("tenant admin endpoints with explicit tenant id require tenant access", TenantAdminTenantIdEndpointsRequireTenantAccess()),
+    ("catalog id-only admin handlers enforce tenant ownership", CatalogIdOnlyAdminHandlersEnforceTenantOwnership()),
+    ("staffing id-only admin handlers enforce tenant ownership", StaffingIdOnlyAdminHandlersEnforceTenantOwnership()),
+    ("resources id-only admin handlers enforce tenant ownership", ResourcesIdOnlyAdminHandlersEnforceTenantOwnership()),
+    ("booking id-only admin and staff handlers enforce tenant ownership", BookingIdOnlyHandlersEnforceTenantOwnership()),
     ("identity module has db context", typeof(IdentityDbContext).Name == nameof(IdentityDbContext)),
     ("tenants module has db context", typeof(TenantsDbContext).Name == nameof(TenantsDbContext)),
     ("tenants db context exposes tenant categories", typeof(TenantsDbContext).GetProperty("TenantCategories") is not null),
@@ -164,6 +197,14 @@ var checks = new List<(string Name, bool Passed)>
     ("bookings presentation has configure policy endpoint", HasEndpointNamed(ReserveFlow.Modules.Bookings.Presentation.AssemblyReference.Assembly, "ConfigureBookingPolicyEndpoint")),
     ("bookings presentation has cancel endpoint", HasEndpointNamed(ReserveFlow.Modules.Bookings.Presentation.AssemblyReference.Assembly, "CancelBookingEndpoint")),
     ("bookings presentation has public cancel endpoint", HasEndpointNamed(ReserveFlow.Modules.Bookings.Presentation.AssemblyReference.Assembly, "PublicCancelBookingEndpoint")),
+    ("public cancel request captures access token", HasTypeWithPublicProperty(
+        ReserveFlow.Modules.Bookings.Presentation.AssemblyReference.Assembly,
+        "PublicCancelBookingRequest",
+        "AccessToken")),
+    ("bookings module has public cancel command", HasTypeNamed(typeof(BookingResponse).Assembly, "CancelPublicBookingCommand")),
+    ("bookings module has public cancel handler", HasTypeNamed(typeof(BookingResponse).Assembly, "CancelPublicBookingCommandHandler")),
+    ("public cancel endpoint uses public lookup credentials", PublicCancelEndpointUsesPublicLookupCredentials()),
+    ("public cancel handler uses public lookup and cancellation policy", PublicCancelHandlerUsesPublicLookupAndPolicy()),
     ("bookings presentation has reschedule endpoint", HasEndpointNamed(ReserveFlow.Modules.Bookings.Presentation.AssemblyReference.Assembly, "RescheduleBookingEndpoint")),
     ("bookings presentation has confirm endpoint", HasEndpointNamed(ReserveFlow.Modules.Bookings.Presentation.AssemblyReference.Assembly, "ConfirmBookingEndpoint")),
     ("bookings presentation has expire endpoint", HasEndpointNamed(ReserveFlow.Modules.Bookings.Presentation.AssemblyReference.Assembly, "ExpirePendingBookingEndpoint")),
@@ -283,6 +324,13 @@ var checks = new List<(string Name, bool Passed)>
     ("availability engine generates fixed-duration slots", AvailabilityEngineGeneratesFixedDurationSlots()),
     ("booking create raises domain event", BookingCreateRaisesDomainEvent()),
     ("booking create stores idempotency key", BookingCreateStoresIdempotencyKey()),
+    ("booking create generates public lookup credentials", BookingCreateGeneratesPublicLookupCredentials()),
+    ("booking response exposes public lookup credentials", HasPublicProperty(typeof(BookingResponse), "PublicReference") &&
+                                                             HasPublicProperty(typeof(BookingResponse), "AccessToken")),
+    ("booking repository can lookup public booking", typeof(IBookingRepository).GetMethod("FindByPublicLookupAsync") is not null),
+    ("bookings module has public booking lookup query", HasTypeNamed(typeof(BookingResponse).Assembly, "GetPublicBookingQuery")),
+    ("bookings module has public booking lookup handler", HasTypeNamed(typeof(BookingResponse).Assembly, "GetPublicBookingQueryHandler")),
+    ("bookings presentation has public booking lookup endpoint", HasEndpointNamed(ReserveFlow.Modules.Bookings.Presentation.AssemblyReference.Assembly, "GetPublicBookingEndpoint")),
     ("booking exposes optimistic concurrency token", BookingExposesOptimisticConcurrencyToken()),
     ("booking lifecycle mutation changes concurrency token", BookingLifecycleMutationChangesConcurrencyToken()),
     ("customer register normalizes data and raises domain event", CustomerRegisterNormalizesDataAndRaisesDomainEvent()),
@@ -410,6 +458,26 @@ static bool BookingCreateStoresIdempotencyKey()
 
     return booking is Booking typedBooking &&
            typeof(Booking).GetProperty("IdempotencyKey")?.GetValue(typedBooking) as string == "public-retry-key";
+}
+
+static bool BookingCreateGeneratesPublicLookupCredentials()
+{
+    Booking booking = Booking.Create(
+        Guid.NewGuid(),
+        Guid.NewGuid(),
+        Guid.NewGuid(),
+        staffMemberId: Guid.NewGuid(),
+        resourceId: null,
+        DateTimeOffset.UtcNow.AddHours(1),
+        DateTimeOffset.UtcNow.AddHours(2));
+
+    string? publicReference = typeof(Booking).GetProperty("PublicReference")?.GetValue(booking) as string;
+    string? accessToken = typeof(Booking).GetProperty("AccessToken")?.GetValue(booking) as string;
+
+    return !string.IsNullOrWhiteSpace(publicReference) &&
+           publicReference.StartsWith("RF-", StringComparison.Ordinal) &&
+           !string.IsNullOrWhiteSpace(accessToken) &&
+           accessToken.Length >= 32;
 }
 
 static bool BookingExposesOptimisticConcurrencyToken()
@@ -1168,6 +1236,180 @@ static bool KeycloakRoleParserAcceptsSimpleRoleClaims()
     return KeycloakRoleClaims.HasAnyRole(principal, KeycloakRoles.PlatformAdmin);
 }
 
+static bool HttpCurrentUserReadsKeycloakClaims()
+{
+    Guid userId = Guid.NewGuid();
+    var httpContext = new DefaultHttpContext
+    {
+        User = new ClaimsPrincipal(new ClaimsIdentity(
+            [
+                new Claim("sub", "keycloak-subject"),
+                new Claim("user_id", userId.ToString()),
+                new Claim("email", "ADMIN@SMILE.EXAMPLE"),
+                new Claim("permissions", "Bookings.Create Reports.View")
+            ],
+            authenticationType: "jwt"))
+    };
+
+    var currentUser = new HttpCurrentUser(new HttpContextAccessor { HttpContext = httpContext });
+
+    return currentUser.UserId == userId &&
+           currentUser.KeycloakSubject == "keycloak-subject" &&
+           currentUser.Email == "admin@smile.example" &&
+           currentUser.Permissions.Contains("Bookings.Create") &&
+           currentUser.Permissions.Contains("Reports.View");
+}
+
+static bool HttpTenantContextReadsTenantHeadersBeforeClaims()
+{
+    Guid headerTenantId = Guid.NewGuid();
+    Guid claimTenantId = Guid.NewGuid();
+    var httpContext = new DefaultHttpContext
+    {
+        User = new ClaimsPrincipal(new ClaimsIdentity(
+            [
+                new Claim("tenant_id", claimTenantId.ToString()),
+                new Claim("tenant_slug", "claim-tenant"),
+                new Claim("tenant_timezone", "UTC")
+            ],
+            authenticationType: "jwt"))
+    };
+
+    httpContext.Request.Headers["X-Tenant-Id"] = new StringValues(headerTenantId.ToString());
+    httpContext.Request.Headers["X-Tenant-Slug"] = new StringValues("header-tenant");
+    httpContext.Request.Headers["X-Tenant-TimeZone"] = new StringValues("Asia/Tashkent");
+
+    var tenantContext = new HttpTenantContext(new HttpContextAccessor { HttpContext = httpContext });
+
+    return tenantContext.TenantId == headerTenantId &&
+           tenantContext.TenantSlug == "header-tenant" &&
+           tenantContext.TimeZoneId == "Asia/Tashkent" &&
+           !tenantContext.IsPlatformScope;
+}
+
+static bool TenantAccessGuardAllowsCurrentTenant()
+{
+    Guid tenantId = Guid.NewGuid();
+    var guard = new TenantAccessGuard(new TestTenantContext(tenantId, isPlatformScope: false));
+
+    return guard.CanAccessTenant(tenantId);
+}
+
+static bool TenantAccessGuardAllowsPlatformScope()
+{
+    Guid tenantId = Guid.NewGuid();
+    var guard = new TenantAccessGuard(new TestTenantContext(tenantId: null, isPlatformScope: true));
+
+    return guard.CanAccessTenant(tenantId);
+}
+
+static bool TenantAccessGuardDeniesDifferentTenant()
+{
+    var guard = new TenantAccessGuard(new TestTenantContext(Guid.NewGuid(), isPlatformScope: false));
+
+    return !guard.CanAccessTenant(Guid.NewGuid());
+}
+
+static bool TenantAdminTenantIdEndpointsRequireTenantAccess()
+{
+    string[] endpointFiles =
+    [
+        "src/Modules/Catalog/ReserveFlow.Modules.Catalog.Presentation/CreateServiceEndpoint.cs",
+        "src/Modules/Catalog/ReserveFlow.Modules.Catalog.Presentation/GetAdminServicesEndpoint.cs",
+        "src/Modules/Staffing/ReserveFlow.Modules.Staffing.Presentation/CreateStaffMemberEndpoint.cs",
+        "src/Modules/Staffing/ReserveFlow.Modules.Staffing.Presentation/GetAdminStaffMembersEndpoint.cs",
+        "src/Modules/Resources/ReserveFlow.Modules.Resources.Presentation/CreateResourceEndpoint.cs",
+        "src/Modules/Resources/ReserveFlow.Modules.Resources.Presentation/GetAdminResourcesEndpoint.cs",
+        "src/Modules/Scheduling/ReserveFlow.Modules.Scheduling.Presentation/CreateStaffWorkingHourEndpoint.cs",
+        "src/Modules/Scheduling/ReserveFlow.Modules.Scheduling.Presentation/CreateResourceWorkingHourEndpoint.cs",
+        "src/Modules/Scheduling/ReserveFlow.Modules.Scheduling.Presentation/CreateStaffUnavailablePeriodEndpoint.cs",
+        "src/Modules/Scheduling/ReserveFlow.Modules.Scheduling.Presentation/CreateResourceUnavailablePeriodEndpoint.cs",
+        "src/Modules/Bookings/ReserveFlow.Modules.Bookings.Presentation/ConfigureBookingPolicyEndpoint.cs",
+        "src/Modules/Notifications/ReserveFlow.Modules.Notifications.Presentation/QueueNotificationEndpoint.cs",
+        "src/Modules/Audit/ReserveFlow.Modules.Audit.Presentation/RecordAuditLogEndpoint.cs",
+        "src/Modules/Reporting/ReserveFlow.Modules.Reporting.Presentation/RecordDailyBookingReportEndpoint.cs",
+        "src/Modules/Reporting/ReserveFlow.Modules.Reporting.Presentation/GetDailyBookingReportEndpoint.cs"
+    ];
+
+    return endpointFiles.All(file => SourceContains(file, "RequireTenantAccess()"));
+}
+
+static bool CatalogIdOnlyAdminHandlersEnforceTenantOwnership()
+{
+    string[] handlerFiles =
+    [
+        "src/Modules/Catalog/ReserveFlow.Modules.Catalog.Application/Services/GetService/GetServiceQueryHandler.cs",
+        "src/Modules/Catalog/ReserveFlow.Modules.Catalog.Application/Services/UpdateService/UpdateServiceCommandHandler.cs",
+        "src/Modules/Catalog/ReserveFlow.Modules.Catalog.Application/Services/DeactivateService/DeactivateServiceCommandHandler.cs"
+    ];
+
+    return handlerFiles.All(HandlerSourceHasTenantAccessGuard);
+}
+
+static bool StaffingIdOnlyAdminHandlersEnforceTenantOwnership()
+{
+    string[] handlerFiles =
+    [
+        "src/Modules/Staffing/ReserveFlow.Modules.Staffing.Application/StaffMembers/GetStaffMember/GetStaffMemberQueryHandler.cs",
+        "src/Modules/Staffing/ReserveFlow.Modules.Staffing.Application/StaffMembers/UpdateStaffMember/UpdateStaffMemberCommandHandler.cs",
+        "src/Modules/Staffing/ReserveFlow.Modules.Staffing.Application/StaffMembers/DeactivateStaffMember/DeactivateStaffMemberCommandHandler.cs"
+    ];
+
+    return handlerFiles.All(HandlerSourceHasTenantAccessGuard);
+}
+
+static bool ResourcesIdOnlyAdminHandlersEnforceTenantOwnership()
+{
+    string[] handlerFiles =
+    [
+        "src/Modules/Resources/ReserveFlow.Modules.Resources.Application/Resources/GetResource/GetResourceQueryHandler.cs",
+        "src/Modules/Resources/ReserveFlow.Modules.Resources.Application/Resources/UpdateResource/UpdateResourceCommandHandler.cs",
+        "src/Modules/Resources/ReserveFlow.Modules.Resources.Application/Resources/DeactivateResource/DeactivateResourceCommandHandler.cs"
+    ];
+
+    return handlerFiles.All(HandlerSourceHasTenantAccessGuard);
+}
+
+static bool BookingIdOnlyHandlersEnforceTenantOwnership()
+{
+    string[] handlerFiles =
+    [
+        "src/Modules/Bookings/ReserveFlow.Modules.Bookings.Application/Bookings/CancelBooking/CancelBookingCommandHandler.cs",
+        "src/Modules/Bookings/ReserveFlow.Modules.Bookings.Application/Bookings/RescheduleBooking/RescheduleBookingCommandHandler.cs",
+        "src/Modules/Bookings/ReserveFlow.Modules.Bookings.Application/Bookings/ConfirmBooking/ConfirmBookingCommandHandler.cs",
+        "src/Modules/Bookings/ReserveFlow.Modules.Bookings.Application/Bookings/ExpirePendingBooking/ExpirePendingBookingCommandHandler.cs",
+        "src/Modules/Bookings/ReserveFlow.Modules.Bookings.Application/Bookings/CompleteBooking/CompleteBookingCommandHandler.cs",
+        "src/Modules/Bookings/ReserveFlow.Modules.Bookings.Application/Bookings/MarkBookingAsNoShow/MarkBookingAsNoShowCommandHandler.cs"
+    ];
+
+    return handlerFiles.All(HandlerSourceHasTenantAccessGuard);
+}
+
+static bool PublicCancelEndpointUsesPublicLookupCredentials()
+{
+    string endpointFile = "src/Modules/Bookings/ReserveFlow.Modules.Bookings.Presentation/PublicCancelBookingEndpoint.cs";
+
+    return SourceContains(endpointFile, "/api/public/bookings/{publicReference}/cancel") &&
+           SourceContains(endpointFile, "PublicCancelBookingRequest") &&
+           SourceContains(endpointFile, "CancelPublicBookingCommand") &&
+           !SourceContains(endpointFile, "{bookingId:guid}");
+}
+
+static bool PublicCancelHandlerUsesPublicLookupAndPolicy()
+{
+    string handlerFile = "src/Modules/Bookings/ReserveFlow.Modules.Bookings.Application/Bookings/CancelPublicBooking/CancelPublicBookingCommandHandler.cs";
+
+    return SourceContains(handlerFile, "FindByPublicLookupAsync") &&
+           SourceContains(handlerFile, "EnsureCancellationAllowed") &&
+           SourceContains(handlerFile, "BookingHistoryEntry.Record");
+}
+
+static bool HandlerSourceHasTenantAccessGuard(string handlerFile)
+{
+    return SourceContains(handlerFile, "ITenantAccessGuard") &&
+           SourceContains(handlerFile, "tenantAccessGuard.CanAccessTenant");
+}
+
 static bool AvailabilityEngineGeneratesFixedDurationSlots()
 {
     var workingWindow = new AvailabilityWindow(
@@ -1182,4 +1424,15 @@ static bool AvailabilityEngineGeneratesFixedDurationSlots()
     return slots.Count == 5 &&
            slots[0].StartsAtUtc == workingWindow.StartsAtUtc &&
            slots[^1].StartsAtUtc == new DateTimeOffset(2026, 6, 1, 11, 0, 0, TimeSpan.Zero);
+}
+
+sealed class TestTenantContext(Guid? tenantId, bool isPlatformScope) : ITenantContext
+{
+    public Guid? TenantId { get; } = tenantId;
+
+    public string? TenantSlug => null;
+
+    public string? TimeZoneId => null;
+
+    public bool IsPlatformScope { get; } = isPlatformScope;
 }
