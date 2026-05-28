@@ -6,4 +6,5 @@ namespace ReserveFlow.Modules.Tenants.Application.Tenants.CreateTenant;
 public sealed record CreateTenantCommand(
     string Name,
     string Slug,
-    string TimeZoneId) : ICommand<TenantResponse>;
+    string TimeZoneId,
+    Guid? CategoryId = null) : ICommand<TenantResponse>;

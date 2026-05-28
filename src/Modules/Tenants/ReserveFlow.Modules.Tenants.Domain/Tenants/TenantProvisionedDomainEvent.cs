@@ -5,4 +5,5 @@ namespace ReserveFlow.Modules.Tenants.Domain.Tenants;
 public sealed record TenantProvisionedDomainEvent(
     Guid TenantId,
     string Slug,
-    string TimeZoneId) : DomainEvent;
+    string TimeZoneId,
+    Guid? CategoryId) : DomainEvent;

@@ -7,6 +7,7 @@ public sealed record TenantResponse(
     string Name,
     string Slug,
     string TimeZoneId,
+    Guid? CategoryId,
     string Status)
 {
     public static TenantResponse FromTenant(Tenant tenant)
@@ -16,6 +17,7 @@ public sealed record TenantResponse(
             tenant.Name,
             tenant.Slug,
             tenant.TimeZoneId,
+            tenant.CategoryId,
             tenant.Status.ToString());
     }
 }

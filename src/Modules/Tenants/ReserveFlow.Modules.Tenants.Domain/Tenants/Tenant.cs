@@ -8,12 +8,14 @@ public sealed class Tenant : Entity
         Guid id,
         string name,
         string slug,
-        string timeZoneId)
+        string timeZoneId,
+        Guid? categoryId)
         : base(id)
     {
         Name = name;
         Slug = slug;
         TimeZoneId = timeZoneId;
+        CategoryId = categoryId;
         Status = TenantStatus.Pending;
         CreatedAtUtc = DateTime.UtcNow;
     }
@@ -28,22 +30,39 @@ public sealed class Tenant : Entity
 
     public string TimeZoneId { get; private set; } = string.Empty;
 
+    public Guid? CategoryId { get; private set; }
+
     public TenantStatus Status { get; private set; }
 
     public DateTime CreatedAtUtc { get; private set; }
 
-    public static Tenant Create(string name, string slug, string timeZoneId)
+    public static Tenant Create(
+        string name,
+        string slug,
+        string timeZoneId,
+        Guid? categoryId = null)
     {
         string normalizedName = NormalizeRequired(name, "Tenant name");
         string normalizedSlug = NormalizeSlug(slug);
         string normalizedTimeZoneId = NormalizeRequired(timeZoneId, "Tenant time zone");
 
-        var tenant = new Tenant(Guid.NewGuid(), normalizedName, normalizedSlug, normalizedTimeZoneId);
+        if (categoryId == Guid.Empty)
+        {
+            throw new InvalidOperationException("Tenant category id cannot be empty.");
+        }
+
+        var tenant = new Tenant(
+            Guid.NewGuid(),
+            normalizedName,
+            normalizedSlug,
+            normalizedTimeZoneId,
+            categoryId);
 
         tenant.RaiseDomainEvent(new TenantProvisionedDomainEvent(
             tenant.Id,
             tenant.Slug,
-            tenant.TimeZoneId));
+            tenant.TimeZoneId,
+            tenant.CategoryId));
 
         return tenant;
     }
@@ -58,6 +77,38 @@ public sealed class Tenant : Entity
         }
 
         return normalizedSlug;
+    }
+
+    public void Activate(DateTimeOffset activatedAtUtc)
+    {
+        if (Status is TenantStatus.Active)
+        {
+            throw new InvalidOperationException("Tenant is already active.");
+        }
+
+        if (Status is TenantStatus.Deleted)
+        {
+            throw new InvalidOperationException("Deleted tenant cannot be activated.");
+        }
+
+        Status = TenantStatus.Active;
+        RaiseDomainEvent(new TenantActivatedDomainEvent(Id, activatedAtUtc));
+    }
+
+    public void Suspend(DateTimeOffset suspendedAtUtc)
+    {
+        if (Status is TenantStatus.Suspended)
+        {
+            throw new InvalidOperationException("Tenant is already suspended.");
+        }
+
+        if (Status is TenantStatus.Deleted)
+        {
+            throw new InvalidOperationException("Deleted tenant cannot be suspended.");
+        }
+
+        Status = TenantStatus.Suspended;
+        RaiseDomainEvent(new TenantSuspendedDomainEvent(Id, suspendedAtUtc));
     }
 
     private static string NormalizeRequired(string value, string fieldName)

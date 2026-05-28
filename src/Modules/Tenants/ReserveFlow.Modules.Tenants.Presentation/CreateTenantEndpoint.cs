@@ -26,7 +26,11 @@ internal sealed class CreateTenantEndpoint : IEndpoint
         CancellationToken cancellationToken)
     {
         TenantResponse response = await handler.Handle(
-            new CreateTenantCommand(request.Name, request.Slug, request.TimeZoneId),
+            new CreateTenantCommand(
+                request.Name,
+                request.Slug,
+                request.TimeZoneId,
+                request.CategoryId),
             cancellationToken);
 
         return TypedResults.Created($"/api/platform/tenants/{response.Slug}", response);

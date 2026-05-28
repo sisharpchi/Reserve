@@ -18,7 +18,11 @@ public sealed class CreateTenantCommandHandler(
             throw new InvalidOperationException("Tenant slug already exists.");
         }
 
-        Tenant tenant = Tenant.Create(command.Name, normalizedSlug, command.TimeZoneId);
+        Tenant tenant = Tenant.Create(
+            command.Name,
+            normalizedSlug,
+            command.TimeZoneId,
+            command.CategoryId);
 
         tenantRepository.Insert(tenant);
         await unitOfWork.SaveChangesAsync(cancellationToken);

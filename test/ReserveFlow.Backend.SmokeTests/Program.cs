@@ -32,11 +32,16 @@ using ReserveFlow.Modules.Reporting.Domain.Reports;
 using ReserveFlow.Modules.Reporting.Infrastructure.Database;
 using ReserveFlow.Modules.Resources.Domain.Resources;
 using ReserveFlow.Modules.Resources.Infrastructure.Database;
+using ReserveFlow.Modules.Scheduling.Application.Availability;
+using ReserveFlow.Modules.Scheduling.Application.WorkingHours;
 using ReserveFlow.Modules.Scheduling.Domain.Availability;
+using ReserveFlow.Modules.Scheduling.Domain.WorkingHours;
 using ReserveFlow.Modules.Scheduling.Infrastructure.Database;
 using ReserveFlow.Modules.Staffing.Domain.StaffMembers;
 using ReserveFlow.Modules.Staffing.Infrastructure.Database;
+using ReserveFlow.Modules.Tenants.Application.Tenants;
 using ReserveFlow.Modules.Tenants.Domain.Tenants;
+using ReserveFlow.Modules.Tenants.Domain.TenantCategories;
 using ReserveFlow.Modules.Tenants.Infrastructure.Database;
 
 var checks = new List<(string Name, bool Passed)>
@@ -72,6 +77,7 @@ var checks = new List<(string Name, bool Passed)>
         "RequireRateLimiting(RateLimitPolicies.AuthContext")),
     ("identity module has db context", typeof(IdentityDbContext).Name == nameof(IdentityDbContext)),
     ("tenants module has db context", typeof(TenantsDbContext).Name == nameof(TenantsDbContext)),
+    ("tenants db context exposes tenant categories", typeof(TenantsDbContext).GetProperty("TenantCategories") is not null),
     ("catalog module has db context", typeof(CatalogDbContext).Name == nameof(CatalogDbContext)),
     ("staffing module has db context", typeof(StaffingDbContext).Name == nameof(StaffingDbContext)),
     ("resources module has db context", typeof(ResourcesDbContext).Name == nameof(ResourcesDbContext)),
@@ -165,9 +171,38 @@ var checks = new List<(string Name, bool Passed)>
     ("integrations module has webhook inbox response dto", typeof(WebhookInboxMessageResponse).Name == nameof(WebhookInboxMessageResponse)),
     ("webhook inbox message normalizes data and raises domain event", WebhookInboxMessageNormalizesDataAndRaisesDomainEvent()),
     ("tenant create normalizes data and raises domain event", TenantCreateNormalizesDataAndRaisesDomainEvent()),
+    ("tenant create can assign category", TenantCreateCanAssignCategory()),
+    ("tenant response exposes category id", HasPublicProperty(typeof(TenantResponse), "CategoryId")),
+    ("tenant category normalizes data and raises domain event", TenantCategoryCreateNormalizesDataAndRaisesDomainEvent()),
+    ("tenants module has category repository", HasTypeNamed(typeof(TenantResponse).Assembly, "ITenantCategoryRepository")),
+    ("tenants module has create category command", HasTypeNamed(typeof(TenantResponse).Assembly, "CreateTenantCategoryCommand")),
+    ("tenants module has create category handler", HasTypeNamed(typeof(TenantResponse).Assembly, "CreateTenantCategoryCommandHandler")),
+    ("tenants module has public category query", HasTypeNamed(typeof(TenantResponse).Assembly, "GetPublicTenantCategoriesQuery")),
+    ("tenants module has public tenant list query", HasTypeNamed(typeof(TenantResponse).Assembly, "GetPublicTenantsQuery")),
+    ("tenants module has activate tenant command", HasTypeNamed(typeof(TenantResponse).Assembly, "ActivateTenantCommand")),
+    ("tenants module has activate tenant handler", HasTypeNamed(typeof(TenantResponse).Assembly, "ActivateTenantCommandHandler")),
+    ("tenants module has suspend tenant command", HasTypeNamed(typeof(TenantResponse).Assembly, "SuspendTenantCommand")),
+    ("tenants module has suspend tenant handler", HasTypeNamed(typeof(TenantResponse).Assembly, "SuspendTenantCommandHandler")),
+    ("tenants presentation has public categories endpoint", HasEndpointNamed(ReserveFlow.Modules.Tenants.Presentation.AssemblyReference.Assembly, "GetPublicCategoriesEndpoint")),
+    ("tenants presentation has public tenant list endpoint", HasEndpointNamed(ReserveFlow.Modules.Tenants.Presentation.AssemblyReference.Assembly, "GetPublicTenantsEndpoint")),
+    ("tenants presentation has create category endpoint", HasEndpointNamed(ReserveFlow.Modules.Tenants.Presentation.AssemblyReference.Assembly, "CreateTenantCategoryEndpoint")),
+    ("tenants presentation has activate tenant endpoint", HasEndpointNamed(ReserveFlow.Modules.Tenants.Presentation.AssemblyReference.Assembly, "ActivateTenantEndpoint")),
+    ("tenants presentation has suspend tenant endpoint", HasEndpointNamed(ReserveFlow.Modules.Tenants.Presentation.AssemblyReference.Assembly, "SuspendTenantEndpoint")),
+    ("tenant activate changes status and raises domain event", TenantActivateChangesStatusAndRaisesDomainEvent()),
+    ("tenant suspend changes status and raises domain event", TenantSuspendChangesStatusAndRaisesDomainEvent()),
     ("service create normalizes data and raises domain event", ServiceCreateNormalizesDataAndRaisesDomainEvent()),
     ("staff member create normalizes data and raises domain event", StaffMemberCreateNormalizesDataAndRaisesDomainEvent()),
     ("resource create normalizes data and raises domain event", ResourceCreateNormalizesDataAndRaisesDomainEvent()),
+    ("scheduling module has working hour response", HasTypeNamed(typeof(AvailableSlotResponse).Assembly, "WorkingHourResponse")),
+    ("scheduling module has create working hour command", HasTypeNamed(typeof(AvailableSlotResponse).Assembly, "CreateWorkingHourCommand")),
+    ("scheduling module has create working hour handler", HasTypeNamed(typeof(AvailableSlotResponse).Assembly, "CreateWorkingHourCommandHandler")),
+    ("working hour repository can query by target and day", typeof(IWorkingHourRepository).GetMethod("GetByTargetAndDayAsync") is not null),
+    ("scheduling module has tenant availability query", HasTypeNamed(typeof(AvailableSlotResponse).Assembly, "GetTenantAvailableSlotsQuery")),
+    ("scheduling module has tenant availability handler", HasTypeNamed(typeof(AvailableSlotResponse).Assembly, "GetTenantAvailableSlotsQueryHandler")),
+    ("scheduling presentation has create staff working hour endpoint", HasEndpointNamed(ReserveFlow.Modules.Scheduling.Presentation.AssemblyReference.Assembly, "CreateStaffWorkingHourEndpoint")),
+    ("scheduling presentation has create resource working hour endpoint", HasEndpointNamed(ReserveFlow.Modules.Scheduling.Presentation.AssemblyReference.Assembly, "CreateResourceWorkingHourEndpoint")),
+    ("scheduling presentation has tenant availability endpoint", HasEndpointNamed(ReserveFlow.Modules.Scheduling.Presentation.AssemblyReference.Assembly, "GetTenantAvailableSlotsEndpoint")),
+    ("working hour create targets staff or resource and raises domain event", WorkingHourCreateTargetsStaffOrResourceAndRaisesDomainEvent()),
     ("availability engine generates fixed-duration slots", AvailabilityEngineGeneratesFixedDurationSlots()),
     ("booking create raises domain event", BookingCreateRaisesDomainEvent()),
     ("booking create stores idempotency key", BookingCreateStoresIdempotencyKey()),
@@ -711,6 +746,68 @@ static bool TenantCreateNormalizesDataAndRaisesDomainEvent()
            tenant.DomainEvents.OfType<TenantProvisionedDomainEvent>().Any();
 }
 
+static bool TenantCreateCanAssignCategory()
+{
+    Guid categoryId = Guid.NewGuid();
+
+    Tenant tenant = Tenant.Create(
+        "Smile Dental Clinic",
+        "smile-dental",
+        "Asia/Tashkent",
+        categoryId);
+
+    return tenant.CategoryId == categoryId;
+}
+
+static bool TenantCategoryCreateNormalizesDataAndRaisesDomainEvent()
+{
+    TenantCategory category = TenantCategory.Create(
+        "  Dental Clinic  ",
+        " DENTAL-CLINIC ",
+        sortOrder: 20);
+
+    return category.Name == "Dental Clinic" &&
+           category.Slug == "dental-clinic" &&
+           category.SortOrder == 20 &&
+           category.IsActive &&
+           category.DomainEvents.OfType<TenantCategoryCreatedDomainEvent>().Any();
+}
+
+static bool TenantActivateChangesStatusAndRaisesDomainEvent()
+{
+    Tenant tenant = Tenant.Create(
+        "Smile Dental Clinic",
+        "smile-dental",
+        "Asia/Tashkent");
+
+    DateTimeOffset activatedAtUtc = DateTimeOffset.UtcNow;
+
+    tenant.ClearDomainEvents();
+    tenant.Activate(activatedAtUtc);
+
+    return tenant.Status == TenantStatus.Active &&
+           tenant.DomainEvents.OfType<TenantActivatedDomainEvent>().Any(domainEvent =>
+               domainEvent.ActivatedAtUtc == activatedAtUtc);
+}
+
+static bool TenantSuspendChangesStatusAndRaisesDomainEvent()
+{
+    Tenant tenant = Tenant.Create(
+        "Smile Dental Clinic",
+        "smile-dental",
+        "Asia/Tashkent");
+
+    DateTimeOffset suspendedAtUtc = DateTimeOffset.UtcNow;
+
+    tenant.Activate(DateTimeOffset.UtcNow);
+    tenant.ClearDomainEvents();
+    tenant.Suspend(suspendedAtUtc);
+
+    return tenant.Status == TenantStatus.Suspended &&
+           tenant.DomainEvents.OfType<TenantSuspendedDomainEvent>().Any(domainEvent =>
+               domainEvent.SuspendedAtUtc == suspendedAtUtc);
+}
+
 static bool ServiceCreateNormalizesDataAndRaisesDomainEvent()
 {
     Service service = Service.Create(
@@ -753,6 +850,25 @@ static bool ResourceCreateNormalizesDataAndRaisesDomainEvent()
            resource.Capacity == 1 &&
            resource.IsActive &&
            resource.DomainEvents.OfType<ResourceCreatedDomainEvent>().Any();
+}
+
+static bool WorkingHourCreateTargetsStaffOrResourceAndRaisesDomainEvent()
+{
+    Guid tenantId = Guid.NewGuid();
+    Guid staffMemberId = Guid.NewGuid();
+
+    WorkingHour workingHour = WorkingHour.Create(
+        tenantId,
+        staffMemberId,
+        resourceId: null,
+        DayOfWeek.Monday,
+        new TimeOnly(9, 0),
+        new TimeOnly(18, 0));
+
+    return workingHour.TenantId == tenantId &&
+           workingHour.StaffMemberId == staffMemberId &&
+           workingHour.ResourceId is null &&
+           workingHour.DomainEvents.OfType<WorkingHourCreatedDomainEvent>().Any();
 }
 
 static bool NotificationQueueNormalizesDataAndRaisesDomainEvent()
