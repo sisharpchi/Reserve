@@ -40,15 +40,12 @@ public sealed class StaffMember : Entity
         }
 
         string normalizedDisplayName = NormalizeRequired(displayName, "Staff display name");
-        string? normalizedEmail = string.IsNullOrWhiteSpace(email)
-            ? null
-            : email.Trim().ToLowerInvariant();
 
         var staffMember = new StaffMember(
             Guid.NewGuid(),
             tenantId,
             normalizedDisplayName,
-            normalizedEmail);
+            NormalizeEmail(email));
 
         staffMember.RaiseDomainEvent(new StaffMemberCreatedDomainEvent(
             staffMember.Id,
@@ -56,6 +53,25 @@ public sealed class StaffMember : Entity
             staffMember.DisplayName));
 
         return staffMember;
+    }
+
+    public void Update(string displayName, string? email)
+    {
+        DisplayName = NormalizeRequired(displayName, "Staff display name");
+        Email = NormalizeEmail(email);
+
+        RaiseDomainEvent(new StaffMemberUpdatedDomainEvent(Id, TenantId, DisplayName));
+    }
+
+    public void Deactivate()
+    {
+        if (!IsActive)
+        {
+            throw new InvalidOperationException("Staff member is already inactive.");
+        }
+
+        IsActive = false;
+        RaiseDomainEvent(new StaffMemberDeactivatedDomainEvent(Id, TenantId));
     }
 
     private static string NormalizeRequired(string value, string fieldName)
@@ -66,5 +82,12 @@ public sealed class StaffMember : Entity
         }
 
         return value.Trim();
+    }
+
+    private static string? NormalizeEmail(string? email)
+    {
+        return string.IsNullOrWhiteSpace(email)
+            ? null
+            : email.Trim().ToLowerInvariant();
     }
 }

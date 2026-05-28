@@ -12,6 +12,23 @@ internal sealed class StaffMemberRepository(StaffingDbContext dbContext) : IStaf
         dbContext.StaffMembers.Add(staffMember);
     }
 
+    public async Task<StaffMember?> GetByIdAsync(Guid staffMemberId, CancellationToken cancellationToken = default)
+    {
+        return await dbContext.StaffMembers.FirstOrDefaultAsync(
+            staffMember => staffMember.Id == staffMemberId,
+            cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<StaffMember>> GetByTenantIdAsync(
+        Guid tenantId,
+        CancellationToken cancellationToken = default)
+    {
+        return await dbContext.StaffMembers
+            .Where(staffMember => staffMember.TenantId == tenantId)
+            .OrderBy(staffMember => staffMember.DisplayName)
+            .ToArrayAsync(cancellationToken);
+    }
+
     public async Task<IReadOnlyList<StaffMember>> GetActiveByTenantIdAsync(
         Guid tenantId,
         CancellationToken cancellationToken = default)

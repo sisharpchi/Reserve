@@ -101,9 +101,31 @@ public static class InfrastructureConfiguration
             });
 
         services.AddAuthorizationBuilder()
-            .AddPolicy(AuthorizationPolicies.PlatformAdmin, policy => policy.RequireAuthenticatedUser())
-            .AddPolicy(AuthorizationPolicies.TenantAdmin, policy => policy.RequireAuthenticatedUser())
-            .AddPolicy(AuthorizationPolicies.Staff, policy => policy.RequireAuthenticatedUser());
+            .AddPolicy(
+                AuthorizationPolicies.PlatformAdmin,
+                policy => policy
+                    .RequireAuthenticatedUser()
+                    .RequireAssertion(context =>
+                        KeycloakRoleClaims.HasAnyRole(context.User, KeycloakRoles.PlatformAdmin)))
+            .AddPolicy(
+                AuthorizationPolicies.TenantAdmin,
+                policy => policy
+                    .RequireAuthenticatedUser()
+                    .RequireAssertion(context =>
+                        KeycloakRoleClaims.HasAnyRole(
+                            context.User,
+                            KeycloakRoles.PlatformAdmin,
+                            KeycloakRoles.TenantAdmin)))
+            .AddPolicy(
+                AuthorizationPolicies.Staff,
+                policy => policy
+                    .RequireAuthenticatedUser()
+                    .RequireAssertion(context =>
+                        KeycloakRoleClaims.HasAnyRole(
+                            context.User,
+                            KeycloakRoles.PlatformAdmin,
+                            KeycloakRoles.TenantAdmin,
+                            KeycloakRoles.Staff)));
 
         services
             .AddHealthChecks()

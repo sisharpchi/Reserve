@@ -1,4 +1,6 @@
+using System.Security.Claims;
 using ReserveFlow.Common.Domain;
+using ReserveFlow.Common.Infrastructure;
 using ReserveFlow.Common.Presentation.Endpoints;
 using ReserveFlow.Common.Infrastructure.Outbox;
 using ReserveFlow.Modules.Audit.Application.AuditLogs;
@@ -13,6 +15,7 @@ using ReserveFlow.Modules.Bookings.Application.Bookings.MarkBookingAsNoShow;
 using ReserveFlow.Modules.Bookings.Application.Bookings.RescheduleBooking;
 using ReserveFlow.Modules.Bookings.Domain.Bookings;
 using ReserveFlow.Modules.Bookings.Infrastructure.Database;
+using ReserveFlow.Modules.Catalog.Application.Services;
 using ReserveFlow.Modules.Catalog.Domain.Services;
 using ReserveFlow.Modules.Catalog.Infrastructure.Database;
 using ReserveFlow.Modules.Identity.Infrastructure.Database;
@@ -30,13 +33,17 @@ using ReserveFlow.Modules.Reporting.Application.Reports.GetDailyBookingReport;
 using ReserveFlow.Modules.Reporting.Application.Reports.RecordDailyBookingReport;
 using ReserveFlow.Modules.Reporting.Domain.Reports;
 using ReserveFlow.Modules.Reporting.Infrastructure.Database;
+using ReserveFlow.Modules.Resources.Application.Resources;
 using ReserveFlow.Modules.Resources.Domain.Resources;
 using ReserveFlow.Modules.Resources.Infrastructure.Database;
 using ReserveFlow.Modules.Scheduling.Application.Availability;
+using ReserveFlow.Modules.Scheduling.Application.Availability.GetTenantAvailableSlots;
 using ReserveFlow.Modules.Scheduling.Application.WorkingHours;
 using ReserveFlow.Modules.Scheduling.Domain.Availability;
+using ReserveFlow.Modules.Scheduling.Domain.UnavailablePeriods;
 using ReserveFlow.Modules.Scheduling.Domain.WorkingHours;
 using ReserveFlow.Modules.Scheduling.Infrastructure.Database;
+using ReserveFlow.Modules.Staffing.Application.StaffMembers;
 using ReserveFlow.Modules.Staffing.Domain.StaffMembers;
 using ReserveFlow.Modules.Staffing.Infrastructure.Database;
 using ReserveFlow.Modules.Tenants.Application.Tenants;
@@ -75,6 +82,12 @@ var checks = new List<(string Name, bool Passed)>
     ("auth me endpoint is rate limited", SourceContains(
         "src/Modules/Identity/ReserveFlow.Modules.Identity.Presentation/CurrentUserEndpoint.cs",
         "RequireRateLimiting(RateLimitPolicies.AuthContext")),
+    ("authorization policies require keycloak role assertions", SourceContains(
+        "src/Common/ReserveFlow.Common.Infrastructure/InfrastructureConfiguration.cs",
+        "KeycloakRoleClaims.HasAnyRole")),
+    ("keycloak role parser accepts realm access roles", KeycloakRoleParserAcceptsRealmAccessRoles()),
+    ("keycloak role parser accepts resource access roles", KeycloakRoleParserAcceptsResourceAccessRoles()),
+    ("keycloak role parser accepts simple roles claims", KeycloakRoleParserAcceptsSimpleRoleClaims()),
     ("identity module has db context", typeof(IdentityDbContext).Name == nameof(IdentityDbContext)),
     ("tenants module has db context", typeof(TenantsDbContext).Name == nameof(TenantsDbContext)),
     ("tenants db context exposes tenant categories", typeof(TenantsDbContext).GetProperty("TenantCategories") is not null),
@@ -82,6 +95,7 @@ var checks = new List<(string Name, bool Passed)>
     ("staffing module has db context", typeof(StaffingDbContext).Name == nameof(StaffingDbContext)),
     ("resources module has db context", typeof(ResourcesDbContext).Name == nameof(ResourcesDbContext)),
     ("scheduling module has db context", typeof(SchedulingDbContext).Name == nameof(SchedulingDbContext)),
+    ("scheduling db context exposes unavailable periods", typeof(SchedulingDbContext).GetProperty("UnavailablePeriods") is not null),
     ("bookings module has db context", typeof(BookingsDbContext).Name == nameof(BookingsDbContext)),
     ("notifications module has db context", typeof(NotificationsDbContext).Name == nameof(NotificationsDbContext)),
     ("audit module has db context", typeof(AuditDbContext).Name == nameof(AuditDbContext)),
@@ -103,6 +117,8 @@ var checks = new List<(string Name, bool Passed)>
     ("booking repository can lookup idempotency key", typeof(IBookingRepository).GetMethod("FindByIdempotencyKeyAsync") is not null),
     ("bookings module has policy repository", HasTypeNamed(typeof(CreateBookingCommand).Assembly, "IBookingPolicyRepository")),
     ("booking create handler checks policy", HasConstructorParameterNamed(typeof(CreateBookingCommandHandler), "IBookingPolicyRepository")),
+    ("bookings module has availability checker contract", HasTypeNamed(typeof(CreateBookingCommand).Assembly, "IBookingAvailabilityChecker")),
+    ("booking create handler checks configured availability", HasConstructorParameterNamed(typeof(CreateBookingCommandHandler), "IBookingAvailabilityChecker")),
     ("booking cancel handler checks policy", HasConstructorParameterNamed(typeof(CancelBookingCommandHandler), "IBookingPolicyRepository")),
     ("booking cancel command captures policy enforcement", HasPublicProperty(typeof(CancelBookingCommand), "EnforcePolicy")),
     ("bookings module has configure policy command", HasTypeNamed(typeof(CreateBookingCommand).Assembly, "ConfigureBookingPolicyCommand")),
@@ -112,6 +128,8 @@ var checks = new List<(string Name, bool Passed)>
     ("booking create handler records history", HasConstructorParameterNamed(typeof(CreateBookingCommandHandler), "IBookingHistoryRepository")),
     ("booking cancel handler records history", HasConstructorParameterNamed(typeof(CancelBookingCommandHandler), "IBookingHistoryRepository")),
     ("booking reschedule handler records history", HasConstructorParameterNamed(typeof(RescheduleBookingCommandHandler), "IBookingHistoryRepository")),
+    ("booking reschedule handler checks configured availability", HasConstructorParameterNamed(typeof(RescheduleBookingCommandHandler), "IBookingAvailabilityChecker")),
+    ("bookings infrastructure has scheduling-backed availability checker", HasTypeNamed(typeof(BookingsDbContext).Assembly, "SchedulingBookingAvailabilityChecker")),
     ("bookings module has cancel command", typeof(CancelBookingCommand).Name == nameof(CancelBookingCommand)),
     ("bookings module has cancel handler", typeof(CancelBookingCommandHandler).Name == nameof(CancelBookingCommandHandler)),
     ("bookings module has reschedule command", typeof(RescheduleBookingCommand).Name == nameof(RescheduleBookingCommand)),
@@ -191,18 +209,77 @@ var checks = new List<(string Name, bool Passed)>
     ("tenant activate changes status and raises domain event", TenantActivateChangesStatusAndRaisesDomainEvent()),
     ("tenant suspend changes status and raises domain event", TenantSuspendChangesStatusAndRaisesDomainEvent()),
     ("service create normalizes data and raises domain event", ServiceCreateNormalizesDataAndRaisesDomainEvent()),
+    ("catalog module has update service command", HasTypeNamed(typeof(ServiceResponse).Assembly, "UpdateServiceCommand")),
+    ("catalog module has update service handler", HasTypeNamed(typeof(ServiceResponse).Assembly, "UpdateServiceCommandHandler")),
+    ("catalog module has deactivate service command", HasTypeNamed(typeof(ServiceResponse).Assembly, "DeactivateServiceCommand")),
+    ("catalog module has deactivate service handler", HasTypeNamed(typeof(ServiceResponse).Assembly, "DeactivateServiceCommandHandler")),
+    ("catalog service repository can lookup service by id", typeof(IServiceRepository).GetMethod("GetByIdAsync") is not null),
+    ("catalog service repository can list services by tenant", typeof(IServiceRepository).GetMethod("GetByTenantIdAsync") is not null),
+    ("catalog module has admin services query", HasTypeNamed(typeof(ServiceResponse).Assembly, "GetServicesQuery")),
+    ("catalog module has admin services query handler", HasTypeNamed(typeof(ServiceResponse).Assembly, "GetServicesQueryHandler")),
+    ("catalog module has admin service detail query", HasTypeNamed(typeof(ServiceResponse).Assembly, "GetServiceQuery")),
+    ("catalog module has admin service detail query handler", HasTypeNamed(typeof(ServiceResponse).Assembly, "GetServiceQueryHandler")),
+    ("catalog presentation has admin services endpoint", HasEndpointNamed(ReserveFlow.Modules.Catalog.Presentation.AssemblyReference.Assembly, "GetAdminServicesEndpoint")),
+    ("catalog presentation has admin service detail endpoint", HasEndpointNamed(ReserveFlow.Modules.Catalog.Presentation.AssemblyReference.Assembly, "GetAdminServiceEndpoint")),
+    ("catalog presentation has update service endpoint", HasEndpointNamed(ReserveFlow.Modules.Catalog.Presentation.AssemblyReference.Assembly, "UpdateServiceEndpoint")),
+    ("catalog presentation has deactivate service endpoint", HasEndpointNamed(ReserveFlow.Modules.Catalog.Presentation.AssemblyReference.Assembly, "DeactivateServiceEndpoint")),
+    ("service update changes details and raises domain event", ServiceUpdateChangesDetailsAndRaisesDomainEvent()),
+    ("service deactivate changes active flag and raises domain event", ServiceDeactivateChangesActiveFlagAndRaisesDomainEvent()),
     ("staff member create normalizes data and raises domain event", StaffMemberCreateNormalizesDataAndRaisesDomainEvent()),
+    ("staffing module has update staff member command", HasTypeNamed(typeof(StaffMemberResponse).Assembly, "UpdateStaffMemberCommand")),
+    ("staffing module has update staff member handler", HasTypeNamed(typeof(StaffMemberResponse).Assembly, "UpdateStaffMemberCommandHandler")),
+    ("staffing module has deactivate staff member command", HasTypeNamed(typeof(StaffMemberResponse).Assembly, "DeactivateStaffMemberCommand")),
+    ("staffing module has deactivate staff member handler", HasTypeNamed(typeof(StaffMemberResponse).Assembly, "DeactivateStaffMemberCommandHandler")),
+    ("staff member repository can lookup staff member by id", typeof(IStaffMemberRepository).GetMethod("GetByIdAsync") is not null),
+    ("staff member repository can list staff members by tenant", typeof(IStaffMemberRepository).GetMethod("GetByTenantIdAsync") is not null),
+    ("staffing module has admin staff members query", HasTypeNamed(typeof(StaffMemberResponse).Assembly, "GetStaffMembersQuery")),
+    ("staffing module has admin staff members query handler", HasTypeNamed(typeof(StaffMemberResponse).Assembly, "GetStaffMembersQueryHandler")),
+    ("staffing module has admin staff member detail query", HasTypeNamed(typeof(StaffMemberResponse).Assembly, "GetStaffMemberQuery")),
+    ("staffing module has admin staff member detail query handler", HasTypeNamed(typeof(StaffMemberResponse).Assembly, "GetStaffMemberQueryHandler")),
+    ("staffing presentation has admin staff members endpoint", HasEndpointNamed(ReserveFlow.Modules.Staffing.Presentation.AssemblyReference.Assembly, "GetAdminStaffMembersEndpoint")),
+    ("staffing presentation has admin staff member detail endpoint", HasEndpointNamed(ReserveFlow.Modules.Staffing.Presentation.AssemblyReference.Assembly, "GetAdminStaffMemberEndpoint")),
+    ("staffing presentation has update staff member endpoint", HasEndpointNamed(ReserveFlow.Modules.Staffing.Presentation.AssemblyReference.Assembly, "UpdateStaffMemberEndpoint")),
+    ("staffing presentation has deactivate staff member endpoint", HasEndpointNamed(ReserveFlow.Modules.Staffing.Presentation.AssemblyReference.Assembly, "DeactivateStaffMemberEndpoint")),
+    ("staff member update changes details and raises domain event", StaffMemberUpdateChangesDetailsAndRaisesDomainEvent()),
+    ("staff member deactivate changes active flag and raises domain event", StaffMemberDeactivateChangesActiveFlagAndRaisesDomainEvent()),
     ("resource create normalizes data and raises domain event", ResourceCreateNormalizesDataAndRaisesDomainEvent()),
+    ("resources module has update resource command", HasTypeNamed(typeof(ResourceResponse).Assembly, "UpdateResourceCommand")),
+    ("resources module has update resource handler", HasTypeNamed(typeof(ResourceResponse).Assembly, "UpdateResourceCommandHandler")),
+    ("resources module has deactivate resource command", HasTypeNamed(typeof(ResourceResponse).Assembly, "DeactivateResourceCommand")),
+    ("resources module has deactivate resource handler", HasTypeNamed(typeof(ResourceResponse).Assembly, "DeactivateResourceCommandHandler")),
+    ("resource repository can lookup resource by id", typeof(IResourceRepository).GetMethod("GetByIdAsync") is not null),
+    ("resource repository can list resources by tenant", typeof(IResourceRepository).GetMethod("GetByTenantIdAsync") is not null),
+    ("resources module has admin resources query", HasTypeNamed(typeof(ResourceResponse).Assembly, "GetResourcesQuery")),
+    ("resources module has admin resources query handler", HasTypeNamed(typeof(ResourceResponse).Assembly, "GetResourcesQueryHandler")),
+    ("resources module has admin resource detail query", HasTypeNamed(typeof(ResourceResponse).Assembly, "GetResourceQuery")),
+    ("resources module has admin resource detail query handler", HasTypeNamed(typeof(ResourceResponse).Assembly, "GetResourceQueryHandler")),
+    ("resources presentation has admin resources endpoint", HasEndpointNamed(ReserveFlow.Modules.Resources.Presentation.AssemblyReference.Assembly, "GetAdminResourcesEndpoint")),
+    ("resources presentation has admin resource detail endpoint", HasEndpointNamed(ReserveFlow.Modules.Resources.Presentation.AssemblyReference.Assembly, "GetAdminResourceEndpoint")),
+    ("resources presentation has update resource endpoint", HasEndpointNamed(ReserveFlow.Modules.Resources.Presentation.AssemblyReference.Assembly, "UpdateResourceEndpoint")),
+    ("resources presentation has deactivate resource endpoint", HasEndpointNamed(ReserveFlow.Modules.Resources.Presentation.AssemblyReference.Assembly, "DeactivateResourceEndpoint")),
+    ("resource update changes details and raises domain event", ResourceUpdateChangesDetailsAndRaisesDomainEvent()),
+    ("resource deactivate changes active flag and raises domain event", ResourceDeactivateChangesActiveFlagAndRaisesDomainEvent()),
     ("scheduling module has working hour response", HasTypeNamed(typeof(AvailableSlotResponse).Assembly, "WorkingHourResponse")),
     ("scheduling module has create working hour command", HasTypeNamed(typeof(AvailableSlotResponse).Assembly, "CreateWorkingHourCommand")),
     ("scheduling module has create working hour handler", HasTypeNamed(typeof(AvailableSlotResponse).Assembly, "CreateWorkingHourCommandHandler")),
     ("working hour repository can query by target and day", typeof(IWorkingHourRepository).GetMethod("GetByTargetAndDayAsync") is not null),
     ("scheduling module has tenant availability query", HasTypeNamed(typeof(AvailableSlotResponse).Assembly, "GetTenantAvailableSlotsQuery")),
     ("scheduling module has tenant availability handler", HasTypeNamed(typeof(AvailableSlotResponse).Assembly, "GetTenantAvailableSlotsQueryHandler")),
+    ("scheduling module has unavailable period response", HasTypeNamed(typeof(AvailableSlotResponse).Assembly, "UnavailablePeriodResponse")),
+    ("scheduling module has unavailable period repository", HasTypeNamed(typeof(AvailableSlotResponse).Assembly, "IUnavailablePeriodRepository")),
+    ("scheduling module has create unavailable period command", HasTypeNamed(typeof(AvailableSlotResponse).Assembly, "CreateUnavailablePeriodCommand")),
+    ("scheduling module has create unavailable period handler", HasTypeNamed(typeof(AvailableSlotResponse).Assembly, "CreateUnavailablePeriodCommandHandler")),
+    ("tenant availability handler subtracts unavailable periods", HasConstructorParameterNamed(typeof(GetTenantAvailableSlotsQueryHandler), "IUnavailablePeriodRepository")),
     ("scheduling presentation has create staff working hour endpoint", HasEndpointNamed(ReserveFlow.Modules.Scheduling.Presentation.AssemblyReference.Assembly, "CreateStaffWorkingHourEndpoint")),
     ("scheduling presentation has create resource working hour endpoint", HasEndpointNamed(ReserveFlow.Modules.Scheduling.Presentation.AssemblyReference.Assembly, "CreateResourceWorkingHourEndpoint")),
+    ("scheduling presentation has create staff unavailable period endpoint", HasEndpointNamed(ReserveFlow.Modules.Scheduling.Presentation.AssemblyReference.Assembly, "CreateStaffUnavailablePeriodEndpoint")),
+    ("scheduling presentation has create resource unavailable period endpoint", HasEndpointNamed(ReserveFlow.Modules.Scheduling.Presentation.AssemblyReference.Assembly, "CreateResourceUnavailablePeriodEndpoint")),
     ("scheduling presentation has tenant availability endpoint", HasEndpointNamed(ReserveFlow.Modules.Scheduling.Presentation.AssemblyReference.Assembly, "GetTenantAvailableSlotsEndpoint")),
     ("working hour create targets staff or resource and raises domain event", WorkingHourCreateTargetsStaffOrResourceAndRaisesDomainEvent()),
+    ("unavailable period create targets staff or resource and raises domain event", UnavailablePeriodCreateTargetsStaffOrResourceAndRaisesDomainEvent()),
+    ("booking availability checker excludes unavailable periods", SourceContains(
+        "src/Modules/Bookings/ReserveFlow.Modules.Bookings.Infrastructure/Bookings/Availability/SchedulingBookingAvailabilityChecker.cs",
+        "unavailable_periods")),
     ("availability engine generates fixed-duration slots", AvailabilityEngineGeneratesFixedDurationSlots()),
     ("booking create raises domain event", BookingCreateRaisesDomainEvent()),
     ("booking create stores idempotency key", BookingCreateStoresIdempotencyKey()),
@@ -824,6 +901,45 @@ static bool ServiceCreateNormalizesDataAndRaisesDomainEvent()
            service.DomainEvents.OfType<ServiceCreatedDomainEvent>().Any();
 }
 
+static bool ServiceUpdateChangesDetailsAndRaisesDomainEvent()
+{
+    Service service = Service.Create(
+        Guid.NewGuid(),
+        "Dental Consultation",
+        durationMinutes: 45,
+        price: 200000m,
+        currency: "UZS");
+
+    service.ClearDomainEvents();
+    service.Update(
+        "  Teeth Cleaning  ",
+        durationMinutes: 30,
+        price: 150000m,
+        currency: " uzs ");
+
+    return service.Name == "Teeth Cleaning" &&
+           service.DurationMinutes == 30 &&
+           service.Price == 150000m &&
+           service.Currency == "UZS" &&
+           service.DomainEvents.OfType<ServiceUpdatedDomainEvent>().Any();
+}
+
+static bool ServiceDeactivateChangesActiveFlagAndRaisesDomainEvent()
+{
+    Service service = Service.Create(
+        Guid.NewGuid(),
+        "Dental Consultation",
+        durationMinutes: 45,
+        price: 200000m,
+        currency: "UZS");
+
+    service.ClearDomainEvents();
+    service.Deactivate();
+
+    return !service.IsActive &&
+           service.DomainEvents.OfType<ServiceDeactivatedDomainEvent>().Any();
+}
+
 static bool StaffMemberCreateNormalizesDataAndRaisesDomainEvent()
 {
     StaffMember staffMember = StaffMember.Create(
@@ -835,6 +951,37 @@ static bool StaffMemberCreateNormalizesDataAndRaisesDomainEvent()
            staffMember.Email == "ali@smile.example" &&
            staffMember.IsActive &&
            staffMember.DomainEvents.OfType<StaffMemberCreatedDomainEvent>().Any();
+}
+
+static bool StaffMemberUpdateChangesDetailsAndRaisesDomainEvent()
+{
+    StaffMember staffMember = StaffMember.Create(
+        Guid.NewGuid(),
+        "Dr. Ali",
+        "ali@smile.example");
+
+    staffMember.ClearDomainEvents();
+    staffMember.Update(
+        "  Dr. Madina  ",
+        " MADINA@SMILE.EXAMPLE ");
+
+    return staffMember.DisplayName == "Dr. Madina" &&
+           staffMember.Email == "madina@smile.example" &&
+           staffMember.DomainEvents.OfType<StaffMemberUpdatedDomainEvent>().Any();
+}
+
+static bool StaffMemberDeactivateChangesActiveFlagAndRaisesDomainEvent()
+{
+    StaffMember staffMember = StaffMember.Create(
+        Guid.NewGuid(),
+        "Dr. Ali",
+        "ali@smile.example");
+
+    staffMember.ClearDomainEvents();
+    staffMember.Deactivate();
+
+    return !staffMember.IsActive &&
+           staffMember.DomainEvents.OfType<StaffMemberDeactivatedDomainEvent>().Any();
 }
 
 static bool ResourceCreateNormalizesDataAndRaisesDomainEvent()
@@ -850,6 +997,41 @@ static bool ResourceCreateNormalizesDataAndRaisesDomainEvent()
            resource.Capacity == 1 &&
            resource.IsActive &&
            resource.DomainEvents.OfType<ResourceCreatedDomainEvent>().Any();
+}
+
+static bool ResourceUpdateChangesDetailsAndRaisesDomainEvent()
+{
+    Resource resource = Resource.Create(
+        Guid.NewGuid(),
+        "Room 2",
+        "treatment-room",
+        capacity: 1);
+
+    resource.ClearDomainEvents();
+    resource.Update(
+        "  Room 3  ",
+        " X-Ray-Room ",
+        capacity: 2);
+
+    return resource.Name == "Room 3" &&
+           resource.ResourceType == "x-ray-room" &&
+           resource.Capacity == 2 &&
+           resource.DomainEvents.OfType<ResourceUpdatedDomainEvent>().Any();
+}
+
+static bool ResourceDeactivateChangesActiveFlagAndRaisesDomainEvent()
+{
+    Resource resource = Resource.Create(
+        Guid.NewGuid(),
+        "Room 2",
+        "treatment-room",
+        capacity: 1);
+
+    resource.ClearDomainEvents();
+    resource.Deactivate();
+
+    return !resource.IsActive &&
+           resource.DomainEvents.OfType<ResourceDeactivatedDomainEvent>().Any();
 }
 
 static bool WorkingHourCreateTargetsStaffOrResourceAndRaisesDomainEvent()
@@ -869,6 +1051,27 @@ static bool WorkingHourCreateTargetsStaffOrResourceAndRaisesDomainEvent()
            workingHour.StaffMemberId == staffMemberId &&
            workingHour.ResourceId is null &&
            workingHour.DomainEvents.OfType<WorkingHourCreatedDomainEvent>().Any();
+}
+
+static bool UnavailablePeriodCreateTargetsStaffOrResourceAndRaisesDomainEvent()
+{
+    Guid tenantId = Guid.NewGuid();
+    Guid resourceId = Guid.NewGuid();
+    DateTimeOffset startsAtUtc = DateTimeOffset.UtcNow.AddHours(1);
+    DateTimeOffset endsAtUtc = startsAtUtc.AddHours(2);
+
+    UnavailablePeriod unavailablePeriod = UnavailablePeriod.Create(
+        tenantId,
+        staffMemberId: null,
+        resourceId,
+        startsAtUtc,
+        endsAtUtc,
+        "  Maintenance  ");
+
+    return unavailablePeriod.TenantId == tenantId &&
+           unavailablePeriod.ResourceId == resourceId &&
+           unavailablePeriod.Reason == "Maintenance" &&
+           unavailablePeriod.DomainEvents.OfType<UnavailablePeriodCreatedDomainEvent>().Any();
 }
 
 static bool NotificationQueueNormalizesDataAndRaisesDomainEvent()
@@ -936,6 +1139,33 @@ static bool WebhookInboxMessageNormalizesDataAndRaisesDomainEvent()
            message.PayloadJson == "{\"id\":\"evt-123\"}" &&
            message.Status == WebhookInboxStatus.Received &&
            message.DomainEvents.OfType<WebhookInboxMessageReceivedDomainEvent>().Any();
+}
+
+static bool KeycloakRoleParserAcceptsRealmAccessRoles()
+{
+    var principal = new ClaimsPrincipal(new ClaimsIdentity(
+        [new Claim("realm_access", "{\"roles\":[\"tenant-admin\"]}")],
+        authenticationType: "jwt"));
+
+    return KeycloakRoleClaims.HasAnyRole(principal, KeycloakRoles.TenantAdmin);
+}
+
+static bool KeycloakRoleParserAcceptsResourceAccessRoles()
+{
+    var principal = new ClaimsPrincipal(new ClaimsIdentity(
+        [new Claim("resource_access", "{\"reserveflow-api\":{\"roles\":[\"staff\"]}}")],
+        authenticationType: "jwt"));
+
+    return KeycloakRoleClaims.HasAnyRole(principal, KeycloakRoles.Staff);
+}
+
+static bool KeycloakRoleParserAcceptsSimpleRoleClaims()
+{
+    var principal = new ClaimsPrincipal(new ClaimsIdentity(
+        [new Claim("roles", "PlatformAdmin")],
+        authenticationType: "jwt"));
+
+    return KeycloakRoleClaims.HasAnyRole(principal, KeycloakRoles.PlatformAdmin);
 }
 
 static bool AvailabilityEngineGeneratesFixedDurationSlots()

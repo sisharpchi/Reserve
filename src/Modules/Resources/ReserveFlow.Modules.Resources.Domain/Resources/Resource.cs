@@ -71,6 +71,35 @@ public sealed class Resource : Entity
         return resource;
     }
 
+    public void Update(
+        string name,
+        string resourceType,
+        int capacity)
+    {
+        Name = NormalizeRequired(name, "Resource name");
+        ResourceType = NormalizeRequired(resourceType, "Resource type").ToLowerInvariant();
+
+        if (capacity <= 0)
+        {
+            throw new InvalidOperationException("Resource capacity must be greater than zero.");
+        }
+
+        Capacity = capacity;
+
+        RaiseDomainEvent(new ResourceUpdatedDomainEvent(Id, TenantId, Name, ResourceType));
+    }
+
+    public void Deactivate()
+    {
+        if (!IsActive)
+        {
+            throw new InvalidOperationException("Resource is already inactive.");
+        }
+
+        IsActive = false;
+        RaiseDomainEvent(new ResourceDeactivatedDomainEvent(Id, TenantId));
+    }
+
     private static string NormalizeRequired(string value, string fieldName)
     {
         if (string.IsNullOrWhiteSpace(value))

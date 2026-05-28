@@ -64,17 +64,13 @@ public sealed class Service : Entity
             throw new InvalidOperationException("Service price cannot be negative.");
         }
 
-        string? normalizedCurrency = string.IsNullOrWhiteSpace(currency)
-            ? null
-            : currency.Trim().ToUpperInvariant();
-
         var service = new Service(
             Guid.NewGuid(),
             tenantId,
             normalizedName,
             durationMinutes,
             price,
-            normalizedCurrency);
+            NormalizeCurrency(currency));
 
         service.RaiseDomainEvent(new ServiceCreatedDomainEvent(
             service.Id,
@@ -85,6 +81,43 @@ public sealed class Service : Entity
         return service;
     }
 
+    public void Update(
+        string name,
+        int durationMinutes,
+        decimal? price,
+        string? currency)
+    {
+        string normalizedName = NormalizeRequired(name, "Service name");
+
+        if (durationMinutes <= 0)
+        {
+            throw new InvalidOperationException("Service duration must be greater than zero.");
+        }
+
+        if (price < 0)
+        {
+            throw new InvalidOperationException("Service price cannot be negative.");
+        }
+
+        Name = normalizedName;
+        DurationMinutes = durationMinutes;
+        Price = price;
+        Currency = NormalizeCurrency(currency);
+
+        RaiseDomainEvent(new ServiceUpdatedDomainEvent(Id, TenantId, Name, DurationMinutes));
+    }
+
+    public void Deactivate()
+    {
+        if (!IsActive)
+        {
+            throw new InvalidOperationException("Service is already inactive.");
+        }
+
+        IsActive = false;
+        RaiseDomainEvent(new ServiceDeactivatedDomainEvent(Id, TenantId));
+    }
+
     private static string NormalizeRequired(string value, string fieldName)
     {
         if (string.IsNullOrWhiteSpace(value))
@@ -93,5 +126,12 @@ public sealed class Service : Entity
         }
 
         return value.Trim();
+    }
+
+    private static string? NormalizeCurrency(string? currency)
+    {
+        return string.IsNullOrWhiteSpace(currency)
+            ? null
+            : currency.Trim().ToUpperInvariant();
     }
 }

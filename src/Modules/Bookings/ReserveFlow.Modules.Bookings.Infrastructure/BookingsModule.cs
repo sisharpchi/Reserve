@@ -16,6 +16,7 @@ using ReserveFlow.Modules.Bookings.Application.Bookings.CreateBooking;
 using ReserveFlow.Modules.Bookings.Application.Bookings.ExpirePendingBooking;
 using ReserveFlow.Modules.Bookings.Application.Bookings.MarkBookingAsNoShow;
 using ReserveFlow.Modules.Bookings.Application.Bookings.RescheduleBooking;
+using ReserveFlow.Modules.Bookings.Infrastructure.Bookings.Availability;
 using ReserveFlow.Modules.Bookings.Application.Customers;
 using ReserveFlow.Modules.Bookings.Infrastructure.BookingPolicies;
 using ReserveFlow.Modules.Bookings.Infrastructure.BookingHistory;
@@ -38,6 +39,7 @@ public static class BookingsModule
                 npgsqlOptions => npgsqlOptions.MigrationsHistoryTable(HistoryRepository.DefaultTableName, Schemas.Bookings)));
 
         services.AddScoped<IBookingRepository, BookingRepository>();
+        services.AddScoped<IBookingAvailabilityChecker, SchedulingBookingAvailabilityChecker>();
         services.AddScoped<IBookingPolicyRepository, BookingPolicyRepository>();
         services.AddScoped<IBookingHistoryRepository, BookingHistoryRepository>();
         services.AddScoped<ICustomerRepository, CustomerRepository>();

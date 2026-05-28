@@ -1,11 +1,15 @@
 using ReserveFlow.Common.Application.Messaging;
+using ReserveFlow.Modules.Scheduling.Application.UnavailablePeriods;
 using ReserveFlow.Modules.Scheduling.Application.WorkingHours;
 using ReserveFlow.Modules.Scheduling.Domain.Availability;
+using ReserveFlow.Modules.Scheduling.Domain.UnavailablePeriods;
 using ReserveFlow.Modules.Scheduling.Domain.WorkingHours;
 
 namespace ReserveFlow.Modules.Scheduling.Application.Availability.GetTenantAvailableSlots;
 
-public sealed class GetTenantAvailableSlotsQueryHandler(IWorkingHourRepository workingHourRepository)
+public sealed class GetTenantAvailableSlotsQueryHandler(
+    IWorkingHourRepository workingHourRepository,
+    IUnavailablePeriodRepository unavailablePeriodRepository)
     : IQueryHandler<GetTenantAvailableSlotsQuery, IReadOnlyList<AvailableSlotResponse>>
 {
     public async Task<IReadOnlyList<AvailableSlotResponse>> Handle(
@@ -36,6 +40,20 @@ public sealed class GetTenantAvailableSlotsQueryHandler(IWorkingHourRepository w
             query.Date,
             query.StaffMemberId,
             query.ResourceId);
+
+        DateTimeOffset rangeStartsAtUtc = new(query.Date.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
+        DateTimeOffset rangeEndsAtUtc = new(query.Date.AddDays(1).ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
+
+        IReadOnlyList<UnavailablePeriod> unavailablePeriods =
+            await unavailablePeriodRepository.GetByTargetAndRangeAsync(
+                query.TenantId,
+                query.StaffMemberId,
+                query.ResourceId,
+                rangeStartsAtUtc,
+                rangeEndsAtUtc,
+                cancellationToken);
+
+        windows = SubtractUnavailablePeriods(windows, unavailablePeriods);
 
         IReadOnlyList<AvailableSlot> slots = AvailabilityEngine.GenerateSlots(
             windows,
@@ -99,5 +117,49 @@ public sealed class GetTenantAvailableSlotsQueryHandler(IWorkingHourRepository w
         }
 
         return intersections;
+    }
+
+    private static List<AvailabilityWindow> SubtractUnavailablePeriods(
+        IReadOnlyList<AvailabilityWindow> windows,
+        IReadOnlyList<UnavailablePeriod> unavailablePeriods)
+    {
+        List<AvailabilityWindow> availableWindows = windows.ToList();
+
+        foreach (UnavailablePeriod unavailablePeriod in unavailablePeriods)
+        {
+            var nextWindows = new List<AvailabilityWindow>();
+
+            foreach (AvailabilityWindow window in availableWindows)
+            {
+                if (unavailablePeriod.EndsAtUtc <= window.StartsAtUtc ||
+                    unavailablePeriod.StartsAtUtc >= window.EndsAtUtc)
+                {
+                    nextWindows.Add(window);
+                    continue;
+                }
+
+                DateTimeOffset leftEnd = unavailablePeriod.StartsAtUtc < window.EndsAtUtc
+                    ? unavailablePeriod.StartsAtUtc
+                    : window.EndsAtUtc;
+
+                if (leftEnd > window.StartsAtUtc)
+                {
+                    nextWindows.Add(new AvailabilityWindow(window.StartsAtUtc, leftEnd));
+                }
+
+                DateTimeOffset rightStart = unavailablePeriod.EndsAtUtc > window.StartsAtUtc
+                    ? unavailablePeriod.EndsAtUtc
+                    : window.StartsAtUtc;
+
+                if (window.EndsAtUtc > rightStart)
+                {
+                    nextWindows.Add(new AvailabilityWindow(rightStart, window.EndsAtUtc));
+                }
+            }
+
+            availableWindows = nextWindows;
+        }
+
+        return availableWindows;
     }
 }

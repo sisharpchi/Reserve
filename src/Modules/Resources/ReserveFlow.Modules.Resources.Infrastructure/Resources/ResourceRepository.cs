@@ -12,6 +12,23 @@ internal sealed class ResourceRepository(ResourcesDbContext dbContext) : IResour
         dbContext.Resources.Add(resource);
     }
 
+    public async Task<Resource?> GetByIdAsync(Guid resourceId, CancellationToken cancellationToken = default)
+    {
+        return await dbContext.Resources.FirstOrDefaultAsync(
+            resource => resource.Id == resourceId,
+            cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<Resource>> GetByTenantIdAsync(
+        Guid tenantId,
+        CancellationToken cancellationToken = default)
+    {
+        return await dbContext.Resources
+            .Where(resource => resource.TenantId == tenantId)
+            .OrderBy(resource => resource.Name)
+            .ToArrayAsync(cancellationToken);
+    }
+
     public async Task<IReadOnlyList<Resource>> GetActiveByTenantIdAsync(
         Guid tenantId,
         CancellationToken cancellationToken = default)

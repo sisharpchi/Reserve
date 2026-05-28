@@ -7,6 +7,7 @@ namespace ReserveFlow.Modules.Bookings.Application.Bookings.RescheduleBooking;
 
 public sealed class RescheduleBookingCommandHandler(
     IBookingRepository bookingRepository,
+    IBookingAvailabilityChecker availabilityChecker,
     IBookingHistoryRepository bookingHistoryRepository,
     IBookingsUnitOfWork unitOfWork) : ICommandHandler<RescheduleBookingCommand, BookingResponse>
 {
@@ -16,6 +17,19 @@ public sealed class RescheduleBookingCommandHandler(
     {
         Booking booking = await bookingRepository.GetByIdAsync(command.BookingId, cancellationToken)
             ?? throw new InvalidOperationException("Booking was not found.");
+
+        bool isAvailable = await availabilityChecker.IsAvailableAsync(
+            booking.TenantId,
+            booking.StaffMemberId,
+            booking.ResourceId,
+            command.StartsAtUtc,
+            command.EndsAtUtc,
+            cancellationToken);
+
+        if (!isAvailable)
+        {
+            throw new InvalidOperationException("Rescheduled booking is outside configured availability.");
+        }
 
         bool hasOverlap = await bookingRepository.HasOverlapAsync(
             booking.TenantId,

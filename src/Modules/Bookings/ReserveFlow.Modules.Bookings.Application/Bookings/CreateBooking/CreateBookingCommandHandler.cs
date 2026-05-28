@@ -11,6 +11,7 @@ namespace ReserveFlow.Modules.Bookings.Application.Bookings.CreateBooking;
 
 public sealed class CreateBookingCommandHandler(
     IBookingRepository bookingRepository,
+    IBookingAvailabilityChecker availabilityChecker,
     IBookingPolicyRepository bookingPolicyRepository,
     IBookingHistoryRepository bookingHistoryRepository,
     ICustomerRepository customerRepository,
@@ -42,6 +43,19 @@ public sealed class CreateBookingCommandHandler(
         if (command.StaffMemberId is null && command.ResourceId is null)
         {
             throw new InvalidOperationException("Booking must target a staff member or resource.");
+        }
+
+        bool isAvailable = await availabilityChecker.IsAvailableAsync(
+            command.TenantId,
+            command.StaffMemberId,
+            command.ResourceId,
+            command.StartsAtUtc,
+            command.EndsAtUtc,
+            cancellationToken);
+
+        if (!isAvailable)
+        {
+            throw new InvalidOperationException("Booking is outside configured availability.");
         }
 
         bool hasOverlap = await bookingRepository.HasOverlapAsync(
