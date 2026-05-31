@@ -1,0 +1,42 @@
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Routing;
+using ReserveFlow.Common.Application.Messaging;
+using ReserveFlow.Common.Presentation.Endpoints;
+using ReserveFlow.Modules.Scheduling.Application.UnavailablePeriods;
+using ReserveFlow.Modules.Scheduling.Application.UnavailablePeriods.CreateUnavailablePeriod;
+
+namespace ReserveFlow.Modules.Scheduling.Presentation;
+
+internal sealed class CreateStaffUnavailablePeriodEndpoint : IEndpoint
+{
+    private const string TenantAdminPolicy = "TenantAdmin";
+
+    public void MapEndpoint(IEndpointRouteBuilder app)
+    {
+        app.MapPost("/api/admin/staff/{staffMemberId:guid}/unavailable-periods", Handle)
+            .RequireAuthorization(TenantAdminPolicy)
+            .RequireTenantAccess()
+            .WithTags("Scheduling")
+            .WithName("CreateStaffUnavailablePeriod");
+    }
+
+    private static async Task<IResult> Handle(
+        Guid staffMemberId,
+        CreateUnavailablePeriodRequest request,
+        ICommandHandler<CreateUnavailablePeriodCommand, UnavailablePeriodResponse> handler,
+        CancellationToken cancellationToken)
+    {
+        UnavailablePeriodResponse response = await handler.Handle(
+            new CreateUnavailablePeriodCommand(
+                request.TenantId,
+                staffMemberId,
+                ResourceId: null,
+                request.StartsAtUtc,
+                request.EndsAtUtc,
+                request.Reason),
+            cancellationToken);
+
+        return TypedResults.Created($"/api/admin/staff/{staffMemberId}/unavailable-periods/{response.Id}", response);
+    }
+}

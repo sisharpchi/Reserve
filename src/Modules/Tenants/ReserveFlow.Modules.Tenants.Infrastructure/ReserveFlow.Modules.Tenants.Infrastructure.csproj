@@ -1,0 +1,24 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Common\ReserveFlow.Common.Infrastructure\ReserveFlow.Common.Infrastructure.csproj" />
+    <ProjectReference Include="..\ReserveFlow.Modules.Tenants.Application\ReserveFlow.Modules.Tenants.Application.csproj" />
+    <ProjectReference Include="..\ReserveFlow.Modules.Tenants.Domain\ReserveFlow.Modules.Tenants.Domain.csproj" />
+    <ProjectReference Include="..\ReserveFlow.Modules.Tenants.Presentation\ReserveFlow.Modules.Tenants.Presentation.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+</Project>
