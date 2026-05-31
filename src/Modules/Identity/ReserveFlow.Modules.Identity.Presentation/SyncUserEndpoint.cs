@@ -4,24 +4,25 @@ using Microsoft.AspNetCore.Routing;
 using ReserveFlow.Common.Application.Messaging;
 using ReserveFlow.Common.Application.RateLimiting;
 using ReserveFlow.Common.Presentation.Endpoints;
-using ReserveFlow.Modules.Identity.Application.CurrentUser;
+using ReserveFlow.Modules.Identity.Application.Users.SyncUser;
 
 namespace ReserveFlow.Modules.Identity.Presentation;
 
-internal sealed class CurrentUserEndpoint : IEndpoint
+internal sealed class SyncUserEndpoint : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapGet("/api/auth/me", async (
-            IQueryHandler<GetCurrentUserQuery, CurrentUserResponse> handler,
+        app.MapPost("/api/auth/sync-user", async (
+            ICommandHandler<SyncUserCommand, SyncUserResponse> handler,
             CancellationToken cancellationToken) =>
         {
-            CurrentUserResponse response = await handler.Handle(new GetCurrentUserQuery(), cancellationToken);
+            SyncUserResponse response = await handler.Handle(new SyncUserCommand(), cancellationToken);
 
             return Results.Ok(response);
         })
         .RequireRateLimiting(RateLimitPolicies.AuthContext)
         .RequireAuthorization()
-        .WithTags("Identity");
+        .WithTags("Identity")
+        .WithName("SyncUser");
     }
 }

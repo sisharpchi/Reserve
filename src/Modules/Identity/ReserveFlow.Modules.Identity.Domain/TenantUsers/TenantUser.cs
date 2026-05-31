@@ -13,7 +13,7 @@ public sealed class TenantUser : Entity
     {
         TenantId = tenantId;
         UserId = userId;
-        Role = role;
+        Role = NormalizeRequired(role, "Role");
         CreatedAtUtc = DateTime.UtcNow;
     }
 
@@ -41,11 +41,21 @@ public sealed class TenantUser : Entity
             throw new InvalidOperationException("User id is required.");
         }
 
-        if (string.IsNullOrWhiteSpace(role))
+        return new TenantUser(Guid.NewGuid(), tenantId, userId, role);
+    }
+
+    public void AssignRole(string role)
+    {
+        Role = NormalizeRequired(role, "Role");
+    }
+
+    private static string NormalizeRequired(string value, string fieldName)
+    {
+        if (string.IsNullOrWhiteSpace(value))
         {
-            throw new InvalidOperationException("Role is required.");
+            throw new InvalidOperationException($"{fieldName} is required.");
         }
 
-        return new TenantUser(Guid.NewGuid(), tenantId, userId, role);
+        return value.Trim();
     }
 }

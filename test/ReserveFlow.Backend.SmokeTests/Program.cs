@@ -22,6 +22,7 @@ using ReserveFlow.Modules.Catalog.Application.Services;
 using ReserveFlow.Modules.Catalog.Domain.Services;
 using ReserveFlow.Modules.Catalog.Infrastructure.Database;
 using ReserveFlow.Modules.Identity.Infrastructure.Database;
+using ReserveFlow.Modules.Identity.Domain.Users;
 using ReserveFlow.Modules.Integrations.Application.WebhookInbox;
 using ReserveFlow.Modules.Integrations.Application.WebhookInbox.AcceptWebhook;
 using ReserveFlow.Modules.Integrations.Domain.WebhookInbox;
@@ -76,6 +77,105 @@ var checks = new List<(string Name, bool Passed)>
     ("api pipeline uses rate limiter", SourceContains(
         "src/API/ReserveFlow.Api/Program.cs",
         "UseRateLimiter")),
+    ("backend ci workflow exists", SourceContains(
+        ".github/workflows/backend-ci.yml",
+        "name: Backend CI")),
+    ("backend ci installs dotnet 8 sdk", SourceContains(
+        ".github/workflows/backend-ci.yml",
+        "dotnet-version: 8.0.x")),
+    ("backend ci restores solution", SourceContains(
+        ".github/workflows/backend-ci.yml",
+        "dotnet restore ReserveFlow.sln")),
+    ("backend ci builds solution without restore", SourceContains(
+        ".github/workflows/backend-ci.yml",
+        "dotnet build ReserveFlow.sln --no-restore")),
+    ("backend ci runs smoke tests", SourceContains(
+        ".github/workflows/backend-ci.yml",
+        "ReserveFlow.Backend.SmokeTests.csproj")),
+    ("common infrastructure has correlation id middleware", SourceContains(
+        "src/Common/ReserveFlow.Common.Infrastructure/Observability/CorrelationIdMiddleware.cs",
+        "class CorrelationIdMiddleware")),
+    ("correlation id middleware uses x-correlation-id header", SourceContains(
+        "src/Common/ReserveFlow.Common.Infrastructure/Observability/CorrelationIdMiddleware.cs",
+        "X-Correlation-Id")),
+    ("correlation id middleware writes response header", SourceContains(
+        "src/Common/ReserveFlow.Common.Infrastructure/Observability/CorrelationIdMiddleware.cs",
+        "Response.Headers")),
+    ("correlation id middleware adds logging scope", SourceContains(
+        "src/Common/ReserveFlow.Common.Infrastructure/Observability/CorrelationIdMiddleware.cs",
+        "BeginScope")),
+    ("api pipeline uses correlation id middleware", SourceContains(
+        "src/API/ReserveFlow.Api/Program.cs",
+        "UseCorrelationId")),
+    ("central packages pin serilog aspnetcore version", SourceContains(
+        "Directory.Packages.props",
+        "Serilog.AspNetCore")),
+    ("api references serilog aspnetcore package", SourceContains(
+        "src/API/ReserveFlow.Api/ReserveFlow.Api.csproj",
+        "Serilog.AspNetCore")),
+    ("api host uses serilog", SourceContains(
+        "src/API/ReserveFlow.Api/Program.cs",
+        "UseSerilog")),
+    ("api host enriches serilog from log context", SourceContains(
+        "src/API/ReserveFlow.Api/Program.cs",
+        "Enrich.FromLogContext")),
+    ("api config has serilog console sink", SourceContains(
+        "src/API/ReserveFlow.Api/appsettings.json",
+        "\"Name\": \"Console\"")),
+    ("common infrastructure has global exception handler", SourceContains(
+        "src/Common/ReserveFlow.Common.Infrastructure/Errors/GlobalExceptionHandler.cs",
+        "class GlobalExceptionHandler")),
+    ("global exception handler writes problem details", SourceContains(
+        "src/Common/ReserveFlow.Common.Infrastructure/Errors/GlobalExceptionHandler.cs",
+        "IProblemDetailsService")),
+    ("global exception handler includes trace id", SourceContains(
+        "src/Common/ReserveFlow.Common.Infrastructure/Errors/GlobalExceptionHandler.cs",
+        "traceId")),
+    ("common infrastructure registers exception handler", SourceContains(
+        "src/Common/ReserveFlow.Common.Infrastructure/InfrastructureConfiguration.cs",
+        "AddExceptionHandler<GlobalExceptionHandler>")),
+    ("central packages pin opentelemetry hosting version", SourceContains(
+        "Directory.Packages.props",
+        "OpenTelemetry.Extensions.Hosting")),
+    ("central packages pin opentelemetry aspnetcore instrumentation version", SourceContains(
+        "Directory.Packages.props",
+        "OpenTelemetry.Instrumentation.AspNetCore")),
+    ("central packages pin opentelemetry http instrumentation version", SourceContains(
+        "Directory.Packages.props",
+        "OpenTelemetry.Instrumentation.Http")),
+    ("central packages pin opentelemetry runtime instrumentation version", SourceContains(
+        "Directory.Packages.props",
+        "OpenTelemetry.Instrumentation.Runtime")),
+    ("central packages pin opentelemetry otlp exporter version", SourceContains(
+        "Directory.Packages.props",
+        "OpenTelemetry.Exporter.OpenTelemetryProtocol")),
+    ("common infrastructure references opentelemetry hosting package", SourceContains(
+        "src/Common/ReserveFlow.Common.Infrastructure/ReserveFlow.Common.Infrastructure.csproj",
+        "OpenTelemetry.Extensions.Hosting")),
+    ("common infrastructure defines telemetry names", SourceContains(
+        "src/Common/ReserveFlow.Common.Infrastructure/Observability/ReserveFlowTelemetry.cs",
+        "class ReserveFlowTelemetry")),
+    ("common infrastructure registers opentelemetry", SourceContains(
+        "src/Common/ReserveFlow.Common.Infrastructure/InfrastructureConfiguration.cs",
+        "AddOpenTelemetry")),
+    ("common infrastructure configures opentelemetry tracing", SourceContains(
+        "src/Common/ReserveFlow.Common.Infrastructure/InfrastructureConfiguration.cs",
+        "WithTracing")),
+    ("common infrastructure configures opentelemetry metrics", SourceContains(
+        "src/Common/ReserveFlow.Common.Infrastructure/InfrastructureConfiguration.cs",
+        "WithMetrics")),
+    ("common infrastructure adds aspnetcore instrumentation", SourceContains(
+        "src/Common/ReserveFlow.Common.Infrastructure/InfrastructureConfiguration.cs",
+        "AddAspNetCoreInstrumentation")),
+    ("common infrastructure adds http client instrumentation", SourceContains(
+        "src/Common/ReserveFlow.Common.Infrastructure/InfrastructureConfiguration.cs",
+        "AddHttpClientInstrumentation")),
+    ("common infrastructure adds runtime instrumentation", SourceContains(
+        "src/Common/ReserveFlow.Common.Infrastructure/InfrastructureConfiguration.cs",
+        "AddRuntimeInstrumentation")),
+    ("api config has opentelemetry service name", SourceContains(
+        "src/API/ReserveFlow.Api/appsettings.json",
+        "\"ServiceName\": \"ReserveFlow.Api\"")),
     ("api references swashbuckle openapi package", SourceContains(
         "src/API/ReserveFlow.Api/ReserveFlow.Api.csproj",
         "Swashbuckle.AspNetCore")),
@@ -100,6 +200,33 @@ var checks = new List<(string Name, bool Passed)>
     ("auth me endpoint is rate limited", SourceContains(
         "src/Modules/Identity/ReserveFlow.Modules.Identity.Presentation/CurrentUserEndpoint.cs",
         "RequireRateLimiting(RateLimitPolicies.AuthContext")),
+    ("auth me endpoint uses current user query handler", SourceContains(
+        "src/Modules/Identity/ReserveFlow.Modules.Identity.Presentation/CurrentUserEndpoint.cs",
+        "IQueryHandler<GetCurrentUserQuery, CurrentUserResponse>")),
+    ("auth sync-user endpoint exists", SourceContains(
+        "src/Modules/Identity/ReserveFlow.Modules.Identity.Presentation/SyncUserEndpoint.cs",
+        "\"/api/auth/sync-user\"")),
+    ("auth sync-user endpoint is protected", SourceContains(
+        "src/Modules/Identity/ReserveFlow.Modules.Identity.Presentation/SyncUserEndpoint.cs",
+        "RequireAuthorization()")),
+    ("auth sync-user endpoint is rate limited", SourceContains(
+        "src/Modules/Identity/ReserveFlow.Modules.Identity.Presentation/SyncUserEndpoint.cs",
+        "RequireRateLimiting(RateLimitPolicies.AuthContext)")),
+    ("auth sync-user endpoint uses sync command handler", SourceContains(
+        "src/Modules/Identity/ReserveFlow.Modules.Identity.Presentation/SyncUserEndpoint.cs",
+        "ICommandHandler<SyncUserCommand, SyncUserResponse>")),
+    ("platform assign tenant owner endpoint exists", SourceContains(
+        "src/Modules/Identity/ReserveFlow.Modules.Identity.Presentation/AssignTenantOwnerEndpoint.cs",
+        "\"/api/platform/tenants/{tenantId:guid}/assign-owner\"")),
+    ("platform assign tenant owner endpoint requires platform admin", SourceContains(
+        "src/Modules/Identity/ReserveFlow.Modules.Identity.Presentation/AssignTenantOwnerEndpoint.cs",
+        "RequireAuthorization(PlatformAdminPolicy)")),
+    ("platform assign tenant owner endpoint uses command handler", SourceContains(
+        "src/Modules/Identity/ReserveFlow.Modules.Identity.Presentation/AssignTenantOwnerEndpoint.cs",
+        "ICommandHandler<AssignTenantOwnerCommand, AssignTenantOwnerResponse>")),
+    ("platform assign tenant owner request captures keycloak subject", SourceContains(
+        "src/Modules/Identity/ReserveFlow.Modules.Identity.Presentation/AssignTenantOwnerRequest.cs",
+        "KeycloakSubject")),
     ("common infrastructure has keycloak health check", SourceContains(
         "src/Common/ReserveFlow.Common.Infrastructure/Identity/KeycloakHealthCheck.cs",
         "class KeycloakHealthCheck")),
@@ -153,6 +280,85 @@ var checks = new List<(string Name, bool Passed)>
     ("resources id-only admin handlers enforce tenant ownership", ResourcesIdOnlyAdminHandlersEnforceTenantOwnership()),
     ("booking id-only admin and staff handlers enforce tenant ownership", BookingIdOnlyHandlersEnforceTenantOwnership()),
     ("identity module has db context", typeof(IdentityDbContext).Name == nameof(IdentityDbContext)),
+    ("identity domain has role entity", HasTypeNamed(typeof(User).Assembly, "Role")),
+    ("identity domain has permission entity", HasTypeNamed(typeof(User).Assembly, "Permission")),
+    ("identity domain has user role entity", HasTypeNamed(typeof(User).Assembly, "UserRole")),
+    ("identity domain has role permission entity", HasTypeNamed(typeof(User).Assembly, "RolePermission")),
+    ("role create normalizes role names", SourceContains(
+        "src/Modules/Identity/ReserveFlow.Modules.Identity.Domain/Roles/Role.cs",
+        "NormalizeRequired(name")),
+    ("permission create normalizes permission codes", SourceContains(
+        "src/Modules/Identity/ReserveFlow.Modules.Identity.Domain/Permissions/Permission.cs",
+        "NormalizeRequired(code")),
+    ("identity db context exposes roles", typeof(IdentityDbContext).GetProperty("Roles") is not null),
+    ("identity db context exposes permissions", typeof(IdentityDbContext).GetProperty("Permissions") is not null),
+    ("identity db context exposes user roles", typeof(IdentityDbContext).GetProperty("UserRoles") is not null),
+    ("identity db context exposes role permissions", typeof(IdentityDbContext).GetProperty("RolePermissions") is not null),
+    ("identity infrastructure maps roles", SourceContains(
+        "src/Modules/Identity/ReserveFlow.Modules.Identity.Infrastructure/Database/IdentityDbContext.cs",
+        "RoleConfiguration")),
+    ("identity infrastructure maps permissions", SourceContains(
+        "src/Modules/Identity/ReserveFlow.Modules.Identity.Infrastructure/Database/IdentityDbContext.cs",
+        "PermissionConfiguration")),
+    ("identity application has current user query", HasTypeNamed(typeof(ReserveFlow.Modules.Identity.Application.AssemblyReference).Assembly, "GetCurrentUserQuery")),
+    ("identity application has current user response", HasTypeNamed(typeof(ReserveFlow.Modules.Identity.Application.AssemblyReference).Assembly, "CurrentUserResponse")),
+    ("identity application has current user query handler", HasTypeNamed(typeof(ReserveFlow.Modules.Identity.Application.AssemblyReference).Assembly, "GetCurrentUserQueryHandler")),
+    ("current user query combines keycloak and database permissions", SourceContains(
+        "src/Modules/Identity/ReserveFlow.Modules.Identity.Application/CurrentUser/GetCurrentUserQueryHandler.cs",
+        "GetPermissionsAsync")),
+    ("identity application has user repository abstraction", HasTypeNamed(typeof(ReserveFlow.Modules.Identity.Application.AssemblyReference).Assembly, "IUserRepository")),
+    ("identity application has permission reader abstraction", HasTypeNamed(typeof(ReserveFlow.Modules.Identity.Application.AssemblyReference).Assembly, "ICurrentUserPermissionReader")),
+    ("identity infrastructure has user repository", HasTypeNamed(typeof(IdentityDbContext).Assembly, "UserRepository")),
+    ("identity infrastructure has current user permission reader", HasTypeNamed(typeof(IdentityDbContext).Assembly, "CurrentUserPermissionReader")),
+    ("identity module registers current user query handler", SourceContains(
+        "src/Modules/Identity/ReserveFlow.Modules.Identity.Infrastructure/IdentityModule.cs",
+        "GetCurrentUserQueryHandler")),
+    ("identity module registers current user permission reader", SourceContains(
+        "src/Modules/Identity/ReserveFlow.Modules.Identity.Infrastructure/IdentityModule.cs",
+        "ICurrentUserPermissionReader")),
+    ("current user permission reader joins role permissions", SourceContains(
+        "src/Modules/Identity/ReserveFlow.Modules.Identity.Infrastructure/CurrentUser/CurrentUserPermissionReader.cs",
+        "RolePermissions")),
+    ("identity application has sync user command", HasTypeNamed(typeof(ReserveFlow.Modules.Identity.Application.AssemblyReference).Assembly, "SyncUserCommand")),
+    ("identity application has sync user response", HasTypeNamed(typeof(ReserveFlow.Modules.Identity.Application.AssemblyReference).Assembly, "SyncUserResponse")),
+    ("identity application has sync user command handler", HasTypeNamed(typeof(ReserveFlow.Modules.Identity.Application.AssemblyReference).Assembly, "SyncUserCommandHandler")),
+    ("sync user command handler reads keycloak subject", SourceContains(
+        "src/Modules/Identity/ReserveFlow.Modules.Identity.Application/Users/SyncUser/SyncUserCommandHandler.cs",
+        "currentUser.KeycloakSubject")),
+    ("sync user command handler saves changes", SourceContains(
+        "src/Modules/Identity/ReserveFlow.Modules.Identity.Application/Users/SyncUser/SyncUserCommandHandler.cs",
+        "SaveChangesAsync")),
+    ("identity application has identity unit of work", HasTypeNamed(typeof(ReserveFlow.Modules.Identity.Application.AssemblyReference).Assembly, "IIdentityUnitOfWork")),
+    ("identity user can update local profile", SourceContains(
+        "src/Modules/Identity/ReserveFlow.Modules.Identity.Domain/Users/User.cs",
+        "UpdateProfile")),
+    ("identity user repository can insert users", typeof(ReserveFlow.Modules.Identity.Application.Users.IUserRepository).GetMethod("Insert") is not null),
+    ("identity module registers sync user command handler", SourceContains(
+        "src/Modules/Identity/ReserveFlow.Modules.Identity.Infrastructure/IdentityModule.cs",
+        "SyncUserCommandHandler")),
+    ("identity module registers identity unit of work", SourceContains(
+        "src/Modules/Identity/ReserveFlow.Modules.Identity.Infrastructure/IdentityModule.cs",
+        "IIdentityUnitOfWork")),
+    ("identity application has assign tenant owner command", HasTypeNamed(typeof(ReserveFlow.Modules.Identity.Application.AssemblyReference).Assembly, "AssignTenantOwnerCommand")),
+    ("identity application has assign tenant owner response", HasTypeNamed(typeof(ReserveFlow.Modules.Identity.Application.AssemblyReference).Assembly, "AssignTenantOwnerResponse")),
+    ("identity application has assign tenant owner handler", HasTypeNamed(typeof(ReserveFlow.Modules.Identity.Application.AssemblyReference).Assembly, "AssignTenantOwnerCommandHandler")),
+    ("identity application has tenant user repository abstraction", HasTypeNamed(typeof(ReserveFlow.Modules.Identity.Application.AssemblyReference).Assembly, "ITenantUserRepository")),
+    ("assign tenant owner handler creates tenant admin membership", SourceContains(
+        "src/Modules/Identity/ReserveFlow.Modules.Identity.Application/TenantUsers/AssignTenantOwner/AssignTenantOwnerCommandHandler.cs",
+        "\"TenantAdmin\"")),
+    ("assign tenant owner handler saves changes", SourceContains(
+        "src/Modules/Identity/ReserveFlow.Modules.Identity.Application/TenantUsers/AssignTenantOwner/AssignTenantOwnerCommandHandler.cs",
+        "SaveChangesAsync")),
+    ("tenant user can update assigned role", SourceContains(
+        "src/Modules/Identity/ReserveFlow.Modules.Identity.Domain/TenantUsers/TenantUser.cs",
+        "AssignRole")),
+    ("identity infrastructure has tenant user repository", HasTypeNamed(typeof(IdentityDbContext).Assembly, "TenantUserRepository")),
+    ("identity module registers tenant user repository", SourceContains(
+        "src/Modules/Identity/ReserveFlow.Modules.Identity.Infrastructure/IdentityModule.cs",
+        "ITenantUserRepository")),
+    ("identity module registers assign tenant owner handler", SourceContains(
+        "src/Modules/Identity/ReserveFlow.Modules.Identity.Infrastructure/IdentityModule.cs",
+        "AssignTenantOwnerCommandHandler")),
     ("tenants module has db context", typeof(TenantsDbContext).Name == nameof(TenantsDbContext)),
     ("tenants db context exposes tenant categories", typeof(TenantsDbContext).GetProperty("TenantCategories") is not null),
     ("catalog module has db context", typeof(CatalogDbContext).Name == nameof(CatalogDbContext)),

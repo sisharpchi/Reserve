@@ -6,11 +6,16 @@ using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 using ReserveFlow.Common.Application.Abstractions;
 using ReserveFlow.Common.Application.Data;
 using ReserveFlow.Common.Application.RateLimiting;
 using ReserveFlow.Common.Infrastructure.Data;
+using ReserveFlow.Common.Infrastructure.Errors;
 using ReserveFlow.Common.Infrastructure.Identity;
+using ReserveFlow.Common.Infrastructure.Observability;
 
 namespace ReserveFlow.Common.Infrastructure;
 
@@ -20,7 +25,14 @@ public static class InfrastructureConfiguration
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        services.AddProblemDetails();
+        services.AddExceptionHandler<GlobalExceptionHandler>();
+        services.AddProblemDetails(options =>
+        {
+            options.CustomizeProblemDetails = context =>
+            {
+                context.ProblemDetails.Extensions["traceId"] = context.HttpContext.TraceIdentifier;
+            };
+        });
         services.AddCors(options =>
         {
             string[] allowedOrigins = configuration
@@ -50,6 +62,30 @@ public static class InfrastructureConfiguration
         services.AddSingleton<IDatabaseConnectionStringProvider, DatabaseConnectionStringProvider>();
         services.Configure<DatabaseInitializerOptions>(configuration.GetSection("DatabaseInitializer"));
         services.AddHostedService<DatabaseSchemaInitializerHostedService>();
+        services
+            .AddOpenTelemetry()
+            .ConfigureResource(resource => resource.AddService(
+                serviceName: GetOpenTelemetryServiceName(configuration)))
+            .WithTracing(tracing =>
+            {
+                tracing
+                    .AddSource(ReserveFlowTelemetry.ActivitySourceName)
+                    .AddAspNetCoreInstrumentation()
+                    .AddHttpClientInstrumentation();
+
+                AddOtlpExporterIfEnabled(tracing, configuration);
+            })
+            .WithMetrics(metrics =>
+            {
+                metrics
+                    .AddMeter(ReserveFlowTelemetry.MeterName)
+                    .AddAspNetCoreInstrumentation()
+                    .AddHttpClientInstrumentation()
+                    .AddRuntimeInstrumentation();
+
+                AddOtlpExporterIfEnabled(metrics, configuration);
+            });
+
         services.AddRateLimiter(options =>
         {
             options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
@@ -173,5 +209,54 @@ public static class InfrastructureConfiguration
         return httpContext.User.Identity?.IsAuthenticated == true
             ? $"user:{httpContext.User.Identity.Name}"
             : $"ip:{httpContext.Connection.RemoteIpAddress}";
+    }
+
+    private static string GetOpenTelemetryServiceName(IConfiguration configuration)
+    {
+        string? serviceName = configuration["OpenTelemetry:ServiceName"];
+
+        return string.IsNullOrWhiteSpace(serviceName)
+            ? ReserveFlowTelemetry.DefaultServiceName
+            : serviceName;
+    }
+
+    private static void AddOtlpExporterIfEnabled(
+        TracerProviderBuilder tracing,
+        IConfiguration configuration)
+    {
+        if (!configuration.GetValue("OpenTelemetry:Otlp:Enabled", defaultValue: false))
+        {
+            return;
+        }
+
+        tracing.AddOtlpExporter(options =>
+        {
+            string? endpoint = configuration["OpenTelemetry:Otlp:Endpoint"];
+
+            if (Uri.TryCreate(endpoint, UriKind.Absolute, out Uri? uri))
+            {
+                options.Endpoint = uri;
+            }
+        });
+    }
+
+    private static void AddOtlpExporterIfEnabled(
+        MeterProviderBuilder metrics,
+        IConfiguration configuration)
+    {
+        if (!configuration.GetValue("OpenTelemetry:Otlp:Enabled", defaultValue: false))
+        {
+            return;
+        }
+
+        metrics.AddOtlpExporter(options =>
+        {
+            string? endpoint = configuration["OpenTelemetry:Otlp:Endpoint"];
+
+            if (Uri.TryCreate(endpoint, UriKind.Absolute, out Uri? uri))
+            {
+                options.Endpoint = uri;
+            }
+        });
     }
 }

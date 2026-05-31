@@ -31,16 +31,26 @@ public sealed class User : Entity
 
     public static User Create(string keycloakSubject, string email, string displayName)
     {
-        if (string.IsNullOrWhiteSpace(keycloakSubject))
+        string normalizedSubject = NormalizeRequired(keycloakSubject, "Keycloak subject");
+        string normalizedEmail = NormalizeRequired(email, "Email").ToLowerInvariant();
+        string normalizedDisplayName = NormalizeRequired(displayName, "Display name");
+
+        return new User(Guid.NewGuid(), normalizedSubject, normalizedEmail, normalizedDisplayName);
+    }
+
+    public void UpdateProfile(string email, string displayName)
+    {
+        Email = NormalizeRequired(email, "Email").ToLowerInvariant();
+        DisplayName = NormalizeRequired(displayName, "Display name");
+    }
+
+    private static string NormalizeRequired(string value, string fieldName)
+    {
+        if (string.IsNullOrWhiteSpace(value))
         {
-            throw new InvalidOperationException("Keycloak subject is required.");
+            throw new InvalidOperationException($"{fieldName} is required.");
         }
 
-        if (string.IsNullOrWhiteSpace(email))
-        {
-            throw new InvalidOperationException("Email is required.");
-        }
-
-        return new User(Guid.NewGuid(), keycloakSubject, email, displayName);
+        return value.Trim();
     }
 }

@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using ReserveFlow.Api.Extensions;
 using ReserveFlow.Common.Infrastructure;
+using ReserveFlow.Common.Infrastructure.Observability;
 using ReserveFlow.Common.Presentation.Endpoints;
 using ReserveFlow.Modules.Audit.Infrastructure;
 using ReserveFlow.Modules.Bookings.Infrastructure;
@@ -13,14 +14,18 @@ using ReserveFlow.Modules.Resources.Infrastructure;
 using ReserveFlow.Modules.Scheduling.Infrastructure;
 using ReserveFlow.Modules.Staffing.Infrastructure;
 using ReserveFlow.Modules.Tenants.Infrastructure;
+using Serilog;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
-builder.Logging.ClearProviders();
-builder.Logging.AddConfiguration(builder.Configuration.GetSection("Logging"));
-builder.Logging.AddConsole();
-builder.Logging.AddDebug();
-builder.Logging.AddEventSourceLogger();
+builder.Host.UseSerilog((context, services, loggerConfiguration) =>
+{
+    loggerConfiguration
+        .ReadFrom.Configuration(context.Configuration)
+        .ReadFrom.Services(services)
+        .Enrich.FromLogContext()
+        .Enrich.WithProperty("Application", "ReserveFlow");
+});
 
 builder.Configuration.AddModuleConfiguration(["identity", "tenants", "catalog", "staffing", "resources", "scheduling", "bookings", "notifications", "audit", "reporting", "integrations"]);
 
@@ -48,6 +53,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+app.UseCorrelationId();
 app.UseExceptionHandler();
 app.UseCors(CorsPolicies.WebApp);
 app.UseRateLimiter();
