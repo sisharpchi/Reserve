@@ -10,6 +10,8 @@ public interface ITenantRepository
 
     Task<Tenant?> GetBySlugAsync(string slug, CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<Tenant>> GetAllAsync(CancellationToken cancellationToken = default);
+
     Task<IReadOnlyList<Tenant>> GetPublicAsync(
         Guid? categoryId,
         string? search,

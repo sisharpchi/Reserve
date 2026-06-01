@@ -24,6 +24,13 @@ internal sealed class TenantRepository(TenantsDbContext dbContext) : ITenantRepo
             .FirstOrDefaultAsync(tenant => tenant.Slug == slug, cancellationToken);
     }
 
+    public async Task<IReadOnlyList<Tenant>> GetAllAsync(CancellationToken cancellationToken = default)
+    {
+        return await dbContext.Tenants
+            .OrderBy(tenant => tenant.Name)
+            .ToArrayAsync(cancellationToken);
+    }
+
     public async Task<IReadOnlyList<Tenant>> GetPublicAsync(
         Guid? categoryId,
         string? search,

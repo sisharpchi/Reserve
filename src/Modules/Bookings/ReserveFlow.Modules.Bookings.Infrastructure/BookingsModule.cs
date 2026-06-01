@@ -19,6 +19,7 @@ using ReserveFlow.Modules.Bookings.Application.Bookings.GetPublicBooking;
 using ReserveFlow.Modules.Bookings.Application.Bookings.MarkBookingAsNoShow;
 using ReserveFlow.Modules.Bookings.Application.Bookings.RescheduleBooking;
 using ReserveFlow.Modules.Bookings.Infrastructure.Bookings.Availability;
+using ReserveFlow.Modules.Bookings.Infrastructure.Bookings.TenantStatus;
 using ReserveFlow.Modules.Bookings.Application.Customers;
 using ReserveFlow.Modules.Bookings.Infrastructure.BookingPolicies;
 using ReserveFlow.Modules.Bookings.Infrastructure.BookingHistory;
@@ -42,6 +43,7 @@ public static class BookingsModule
 
         services.AddScoped<IBookingRepository, BookingRepository>();
         services.AddScoped<IBookingAvailabilityChecker, SchedulingBookingAvailabilityChecker>();
+        services.AddScoped<ITenantBookingGate, PostgresTenantBookingGate>();
         services.AddScoped<IBookingPolicyRepository, BookingPolicyRepository>();
         services.AddScoped<IBookingHistoryRepository, BookingHistoryRepository>();
         services.AddScoped<ICustomerRepository, CustomerRepository>();

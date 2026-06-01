@@ -12,6 +12,20 @@ internal sealed class TenantCategoryRepository(TenantsDbContext dbContext) : ITe
         dbContext.TenantCategories.Add(category);
     }
 
+    public Task<TenantCategory?> GetByIdAsync(Guid categoryId, CancellationToken cancellationToken = default)
+    {
+        return dbContext.TenantCategories
+            .FirstOrDefaultAsync(category => category.Id == categoryId, cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<TenantCategory>> GetAllAsync(CancellationToken cancellationToken = default)
+    {
+        return await dbContext.TenantCategories
+            .OrderBy(category => category.SortOrder)
+            .ThenBy(category => category.Name)
+            .ToArrayAsync(cancellationToken);
+    }
+
     public async Task<IReadOnlyList<TenantCategory>> GetActiveAsync(CancellationToken cancellationToken = default)
     {
         return await dbContext.TenantCategories

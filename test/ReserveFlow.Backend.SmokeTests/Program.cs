@@ -50,6 +50,7 @@ using ReserveFlow.Modules.Scheduling.Infrastructure.Database;
 using ReserveFlow.Modules.Staffing.Application.StaffMembers;
 using ReserveFlow.Modules.Staffing.Domain.StaffMembers;
 using ReserveFlow.Modules.Staffing.Infrastructure.Database;
+using ReserveFlow.Modules.Tenants.Application.TenantCategories;
 using ReserveFlow.Modules.Tenants.Application.Tenants;
 using ReserveFlow.Modules.Tenants.Domain.Tenants;
 using ReserveFlow.Modules.Tenants.Domain.TenantCategories;
@@ -246,12 +247,25 @@ var checks = new List<(string Name, bool Passed)>
     ("common infrastructure has http tenant context", typeof(HttpTenantContext).Name == nameof(HttpTenantContext)),
     ("http current user reads keycloak claims", HttpCurrentUserReadsKeycloakClaims()),
     ("http tenant context reads tenant headers before claims", HttpTenantContextReadsTenantHeadersBeforeClaims()),
+    ("common application has tenant slug resolver abstraction", HasTypeNamed(typeof(ITenantContext).Assembly, "ITenantSlugResolver")),
+    ("common infrastructure has postgres tenant slug resolver", SourceContains(
+        "src/Common/ReserveFlow.Common.Infrastructure/Tenancy/PostgresTenantSlugResolver.cs",
+        "class PostgresTenantSlugResolver")),
+    ("tenant slug resolver queries platform tenants by slug", SourceContains(
+        "src/Common/ReserveFlow.Common.Infrastructure/Tenancy/PostgresTenantSlugResolver.cs",
+        "from platform.tenants") &&
+        SourceContains(
+            "src/Common/ReserveFlow.Common.Infrastructure/Tenancy/PostgresTenantSlugResolver.cs",
+            "slug = @tenant_slug")),
     ("infrastructure registers current user abstraction", SourceContains(
         "src/Common/ReserveFlow.Common.Infrastructure/InfrastructureConfiguration.cs",
         "AddScoped<ICurrentUser, HttpCurrentUser>")),
     ("infrastructure registers tenant context abstraction", SourceContains(
         "src/Common/ReserveFlow.Common.Infrastructure/InfrastructureConfiguration.cs",
         "AddScoped<ITenantContext, HttpTenantContext>")),
+    ("infrastructure registers tenant slug resolver", SourceContains(
+        "src/Common/ReserveFlow.Common.Infrastructure/InfrastructureConfiguration.cs",
+        "ITenantSlugResolver")),
     ("database initializer can be configured to create missing database", SourceContains(
         "src/Common/ReserveFlow.Common.Infrastructure/Data/DatabaseInitializerOptions.cs",
         "CreateDatabaseIfMissing")),
@@ -389,6 +403,23 @@ var checks = new List<(string Name, bool Passed)>
     ("booking create handler checks policy", HasConstructorParameterNamed(typeof(CreateBookingCommandHandler), "IBookingPolicyRepository")),
     ("bookings module has availability checker contract", HasTypeNamed(typeof(CreateBookingCommand).Assembly, "IBookingAvailabilityChecker")),
     ("booking create handler checks configured availability", HasConstructorParameterNamed(typeof(CreateBookingCommandHandler), "IBookingAvailabilityChecker")),
+    ("bookings module has tenant booking gate contract", HasTypeNamed(typeof(CreateBookingCommand).Assembly, "ITenantBookingGate")),
+    ("booking create handler checks tenant booking gate", HasConstructorParameterNamed(typeof(CreateBookingCommandHandler), "ITenantBookingGate")),
+    ("booking create handler blocks inactive public tenants", SourceContains(
+        "src/Modules/Bookings/ReserveFlow.Modules.Bookings.Application/Bookings/CreateBooking/CreateBookingCommandHandler.cs",
+        "Tenant cannot accept public bookings.")),
+    ("bookings infrastructure has postgres tenant booking gate", SourceContains(
+        "src/Modules/Bookings/ReserveFlow.Modules.Bookings.Infrastructure/Bookings/TenantStatus/PostgresTenantBookingGate.cs",
+        "class PostgresTenantBookingGate")),
+    ("tenant booking gate checks active platform tenant", SourceContains(
+        "src/Modules/Bookings/ReserveFlow.Modules.Bookings.Infrastructure/Bookings/TenantStatus/PostgresTenantBookingGate.cs",
+        "from platform.tenants") &&
+        SourceContains(
+            "src/Modules/Bookings/ReserveFlow.Modules.Bookings.Infrastructure/Bookings/TenantStatus/PostgresTenantBookingGate.cs",
+            "status = 'Active'")),
+    ("bookings module registers tenant booking gate", SourceContains(
+        "src/Modules/Bookings/ReserveFlow.Modules.Bookings.Infrastructure/BookingsModule.cs",
+        "ITenantBookingGate")),
     ("booking cancel handler checks policy", HasConstructorParameterNamed(typeof(CancelBookingCommandHandler), "IBookingPolicyRepository")),
     ("booking cancel command captures policy enforcement", HasPublicProperty(typeof(CancelBookingCommand), "EnforcePolicy")),
     ("bookings module has configure policy command", HasTypeNamed(typeof(CreateBookingCommand).Assembly, "ConfigureBookingPolicyCommand")),
@@ -423,6 +454,15 @@ var checks = new List<(string Name, bool Passed)>
     ("bookings module has response dto", typeof(BookingResponse).Name == nameof(BookingResponse)),
     ("booking response exposes concurrency token", HasPublicProperty(typeof(BookingResponse), "ConcurrencyToken")),
     ("bookings presentation has create endpoint", HasEndpointNamed(ReserveFlow.Modules.Bookings.Presentation.AssemblyReference.Assembly, "CreateBookingEndpoint")),
+    ("public booking create endpoint uses tenant slug route", SourceContains(
+        "src/Modules/Bookings/ReserveFlow.Modules.Bookings.Presentation/CreateBookingEndpoint.cs",
+        "\"/api/public/tenants/{tenantSlug}/bookings\"")),
+    ("public booking create endpoint resolves tenant slug", SourceContains(
+        "src/Modules/Bookings/ReserveFlow.Modules.Bookings.Presentation/CreateBookingEndpoint.cs",
+        "ITenantSlugResolver")),
+    ("public booking create endpoint returns not found for unknown tenant slug", SourceContains(
+        "src/Modules/Bookings/ReserveFlow.Modules.Bookings.Presentation/CreateBookingEndpoint.cs",
+        "TypedResults.NotFound()")),
     ("public booking request captures customer contact", HasTypeWithPublicProperty(
         ReserveFlow.Modules.Bookings.Presentation.AssemblyReference.Assembly,
         "CreateBookingRequest",
@@ -455,6 +495,19 @@ var checks = new List<(string Name, bool Passed)>
     ("audit module has record command", typeof(RecordAuditLogCommand).Name == nameof(RecordAuditLogCommand)),
     ("audit module has record handler", typeof(RecordAuditLogCommandHandler).Name == nameof(RecordAuditLogCommandHandler)),
     ("audit module has response dto", typeof(AuditLogResponse).Name == nameof(AuditLogResponse)),
+    ("audit module has platform audit logs query", HasTypeNamed(typeof(AuditLogResponse).Assembly, "GetPlatformAuditLogsQuery")),
+    ("audit module has platform audit logs query handler", HasTypeNamed(typeof(AuditLogResponse).Assembly, "GetPlatformAuditLogsQueryHandler")),
+    ("audit repository can list recent logs", typeof(IAuditLogRepository).GetMethod("GetRecentAsync") is not null),
+    ("audit presentation has platform audit logs endpoint", HasEndpointNamed(ReserveFlow.Modules.Audit.Presentation.AssemblyReference.Assembly, "GetPlatformAuditLogsEndpoint")),
+    ("platform audit logs endpoint uses platform route", SourceContains(
+        "src/Modules/Audit/ReserveFlow.Modules.Audit.Presentation/GetPlatformAuditLogsEndpoint.cs",
+        "\"/api/platform/audit-logs\"")),
+    ("platform audit logs endpoint requires platform admin", SourceContains(
+        "src/Modules/Audit/ReserveFlow.Modules.Audit.Presentation/GetPlatformAuditLogsEndpoint.cs",
+        "RequireAuthorization(PlatformAdminPolicy)")),
+    ("audit module registers platform audit logs query handler", SourceContains(
+        "src/Modules/Audit/ReserveFlow.Modules.Audit.Infrastructure/AuditModule.cs",
+        "GetPlatformAuditLogsQueryHandler")),
     ("audit log normalizes data and raises domain event", AuditLogNormalizesDataAndRaisesDomainEvent()),
     ("reporting module has record command", typeof(RecordDailyBookingReportCommand).Name == nameof(RecordDailyBookingReportCommand)),
     ("reporting module has record handler", typeof(RecordDailyBookingReportCommandHandler).Name == nameof(RecordDailyBookingReportCommandHandler)),
@@ -474,16 +527,82 @@ var checks = new List<(string Name, bool Passed)>
     ("tenants module has create category command", HasTypeNamed(typeof(TenantResponse).Assembly, "CreateTenantCategoryCommand")),
     ("tenants module has create category handler", HasTypeNamed(typeof(TenantResponse).Assembly, "CreateTenantCategoryCommandHandler")),
     ("tenants module has public category query", HasTypeNamed(typeof(TenantResponse).Assembly, "GetPublicTenantCategoriesQuery")),
+    ("tenants module has platform category list query", HasTypeNamed(typeof(TenantResponse).Assembly, "GetPlatformTenantCategoriesQuery")),
+    ("tenants module has platform category list query handler", HasTypeNamed(typeof(TenantResponse).Assembly, "GetPlatformTenantCategoriesQueryHandler")),
+    ("tenants module has update category command", HasTypeNamed(typeof(TenantResponse).Assembly, "UpdateTenantCategoryCommand")),
+    ("tenants module has update category handler", HasTypeNamed(typeof(TenantResponse).Assembly, "UpdateTenantCategoryCommandHandler")),
     ("tenants module has public tenant list query", HasTypeNamed(typeof(TenantResponse).Assembly, "GetPublicTenantsQuery")),
+    ("tenants module has platform tenant list query", HasTypeNamed(typeof(TenantResponse).Assembly, "GetPlatformTenantsQuery")),
+    ("tenants module has platform tenant list query handler", HasTypeNamed(typeof(TenantResponse).Assembly, "GetPlatformTenantsQueryHandler")),
+    ("tenants module has platform tenant detail query", HasTypeNamed(typeof(TenantResponse).Assembly, "GetTenantQuery")),
+    ("tenants module has platform tenant detail query handler", HasTypeNamed(typeof(TenantResponse).Assembly, "GetTenantQueryHandler")),
+    ("tenants module has update tenant command", HasTypeNamed(typeof(TenantResponse).Assembly, "UpdateTenantCommand")),
+    ("tenants module has update tenant handler", HasTypeNamed(typeof(TenantResponse).Assembly, "UpdateTenantCommandHandler")),
+    ("tenants module has platform usage response", HasTypeNamed(typeof(TenantResponse).Assembly, "PlatformUsageResponse")),
+    ("tenants module has platform usage query", HasTypeNamed(typeof(TenantResponse).Assembly, "GetPlatformUsageQuery")),
+    ("tenants module has platform usage query handler", HasTypeNamed(typeof(TenantResponse).Assembly, "GetPlatformUsageQueryHandler")),
     ("tenants module has activate tenant command", HasTypeNamed(typeof(TenantResponse).Assembly, "ActivateTenantCommand")),
     ("tenants module has activate tenant handler", HasTypeNamed(typeof(TenantResponse).Assembly, "ActivateTenantCommandHandler")),
     ("tenants module has suspend tenant command", HasTypeNamed(typeof(TenantResponse).Assembly, "SuspendTenantCommand")),
     ("tenants module has suspend tenant handler", HasTypeNamed(typeof(TenantResponse).Assembly, "SuspendTenantCommandHandler")),
+    ("tenant category repository can list platform categories", typeof(ITenantCategoryRepository).GetMethod("GetAllAsync") is not null),
+    ("tenant category repository can lookup category by id", typeof(ITenantCategoryRepository).GetMethod("GetByIdAsync") is not null),
+    ("tenant repository can list platform tenants", typeof(ITenantRepository).GetMethod("GetAllAsync") is not null),
     ("tenants presentation has public categories endpoint", HasEndpointNamed(ReserveFlow.Modules.Tenants.Presentation.AssemblyReference.Assembly, "GetPublicCategoriesEndpoint")),
+    ("tenants presentation has platform categories endpoint", HasEndpointNamed(ReserveFlow.Modules.Tenants.Presentation.AssemblyReference.Assembly, "GetPlatformCategoriesEndpoint")),
+    ("tenants presentation has update category endpoint", HasEndpointNamed(ReserveFlow.Modules.Tenants.Presentation.AssemblyReference.Assembly, "UpdateTenantCategoryEndpoint")),
+    ("platform categories endpoint uses platform route", SourceContains(
+        "src/Modules/Tenants/ReserveFlow.Modules.Tenants.Presentation/GetPlatformCategoriesEndpoint.cs",
+        "\"/api/platform/categories\"")),
+    ("update category endpoint uses platform route", SourceContains(
+        "src/Modules/Tenants/ReserveFlow.Modules.Tenants.Presentation/UpdateTenantCategoryEndpoint.cs",
+        "\"/api/platform/categories/{categoryId:guid}\"")),
     ("tenants presentation has public tenant list endpoint", HasEndpointNamed(ReserveFlow.Modules.Tenants.Presentation.AssemblyReference.Assembly, "GetPublicTenantsEndpoint")),
+    ("tenants presentation has platform tenant list endpoint", HasEndpointNamed(ReserveFlow.Modules.Tenants.Presentation.AssemblyReference.Assembly, "GetPlatformTenantsEndpoint")),
+    ("tenants presentation has platform tenant detail endpoint", HasEndpointNamed(ReserveFlow.Modules.Tenants.Presentation.AssemblyReference.Assembly, "GetPlatformTenantEndpoint")),
+    ("tenants presentation has update tenant endpoint", HasEndpointNamed(ReserveFlow.Modules.Tenants.Presentation.AssemblyReference.Assembly, "UpdateTenantEndpoint")),
+    ("tenants presentation has platform usage endpoint", HasEndpointNamed(ReserveFlow.Modules.Tenants.Presentation.AssemblyReference.Assembly, "GetPlatformUsageEndpoint")),
+    ("platform tenant list endpoint uses platform route", SourceContains(
+        "src/Modules/Tenants/ReserveFlow.Modules.Tenants.Presentation/GetPlatformTenantsEndpoint.cs",
+        "\"/api/platform/tenants\"")),
+    ("platform tenant detail endpoint uses platform route", SourceContains(
+        "src/Modules/Tenants/ReserveFlow.Modules.Tenants.Presentation/GetPlatformTenantEndpoint.cs",
+        "\"/api/platform/tenants/{tenantId:guid}\"")),
+    ("update tenant endpoint uses platform route", SourceContains(
+        "src/Modules/Tenants/ReserveFlow.Modules.Tenants.Presentation/UpdateTenantEndpoint.cs",
+        "\"/api/platform/tenants/{tenantId:guid}\"")),
+    ("platform usage endpoint uses platform route", SourceContains(
+        "src/Modules/Tenants/ReserveFlow.Modules.Tenants.Presentation/GetPlatformUsageEndpoint.cs",
+        "\"/api/platform/usage\"")),
     ("tenants presentation has create category endpoint", HasEndpointNamed(ReserveFlow.Modules.Tenants.Presentation.AssemblyReference.Assembly, "CreateTenantCategoryEndpoint")),
     ("tenants presentation has activate tenant endpoint", HasEndpointNamed(ReserveFlow.Modules.Tenants.Presentation.AssemblyReference.Assembly, "ActivateTenantEndpoint")),
     ("tenants presentation has suspend tenant endpoint", HasEndpointNamed(ReserveFlow.Modules.Tenants.Presentation.AssemblyReference.Assembly, "SuspendTenantEndpoint")),
+    ("tenant category domain has updated event", HasTypeNamed(typeof(Tenant).Assembly, "TenantCategoryUpdatedDomainEvent")),
+    ("tenant category update changes details and raises domain event", SourceContains(
+        "src/Modules/Tenants/ReserveFlow.Modules.Tenants.Domain/TenantCategories/TenantCategory.cs",
+        "TenantCategoryUpdatedDomainEvent")),
+    ("tenants module registers platform category list query handler", SourceContains(
+        "src/Modules/Tenants/ReserveFlow.Modules.Tenants.Infrastructure/TenantsModule.cs",
+        "GetPlatformTenantCategoriesQueryHandler")),
+    ("tenants module registers update category handler", SourceContains(
+        "src/Modules/Tenants/ReserveFlow.Modules.Tenants.Infrastructure/TenantsModule.cs",
+        "UpdateTenantCategoryCommandHandler")),
+    ("tenant domain has updated event", HasTypeNamed(typeof(Tenant).Assembly, "TenantUpdatedDomainEvent")),
+    ("tenant update changes details and raises domain event", SourceContains(
+        "src/Modules/Tenants/ReserveFlow.Modules.Tenants.Domain/Tenants/Tenant.cs",
+        "TenantUpdatedDomainEvent")),
+    ("tenants module registers platform tenant list query handler", SourceContains(
+        "src/Modules/Tenants/ReserveFlow.Modules.Tenants.Infrastructure/TenantsModule.cs",
+        "GetPlatformTenantsQueryHandler")),
+    ("tenants module registers update tenant handler", SourceContains(
+        "src/Modules/Tenants/ReserveFlow.Modules.Tenants.Infrastructure/TenantsModule.cs",
+        "UpdateTenantCommandHandler")),
+    ("platform usage handler counts tenant statuses", SourceContains(
+        "src/Modules/Tenants/ReserveFlow.Modules.Tenants.Application/Tenants/GetPlatformUsage/GetPlatformUsageQueryHandler.cs",
+        "TenantStatus.Active")),
+    ("tenants module registers platform usage query handler", SourceContains(
+        "src/Modules/Tenants/ReserveFlow.Modules.Tenants.Infrastructure/TenantsModule.cs",
+        "GetPlatformUsageQueryHandler")),
     ("tenant activate changes status and raises domain event", TenantActivateChangesStatusAndRaisesDomainEvent()),
     ("tenant suspend changes status and raises domain event", TenantSuspendChangesStatusAndRaisesDomainEvent()),
     ("service create normalizes data and raises domain event", ServiceCreateNormalizesDataAndRaisesDomainEvent()),

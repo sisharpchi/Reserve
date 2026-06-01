@@ -111,6 +111,29 @@ public sealed class Tenant : Entity
         RaiseDomainEvent(new TenantSuspendedDomainEvent(Id, suspendedAtUtc));
     }
 
+    public void Update(
+        string name,
+        string slug,
+        string timeZoneId,
+        Guid? categoryId)
+    {
+        string normalizedName = NormalizeRequired(name, "Tenant name");
+        string normalizedSlug = NormalizeSlug(slug);
+        string normalizedTimeZoneId = NormalizeRequired(timeZoneId, "Tenant time zone");
+
+        if (categoryId == Guid.Empty)
+        {
+            throw new InvalidOperationException("Tenant category id cannot be empty.");
+        }
+
+        Name = normalizedName;
+        Slug = normalizedSlug;
+        TimeZoneId = normalizedTimeZoneId;
+        CategoryId = categoryId;
+
+        RaiseDomainEvent(new TenantUpdatedDomainEvent(Id, Slug, TimeZoneId, CategoryId));
+    }
+
     private static string NormalizeRequired(string value, string fieldName)
     {
         if (string.IsNullOrWhiteSpace(value))
