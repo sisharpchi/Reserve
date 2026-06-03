@@ -1,0 +1,310 @@
+/* Google Fonts Import for Outfit & Inter */
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+
+/* Color Variables */
+:root {
+  --hue-primary: 260;   /* Violet Accent */
+  --hue-secondary: 170; /* Teal Accent */
+  
+  --primary: hsl(var(--hue-primary), 85%, 62%);
+  --primary-hover: hsl(var(--hue-primary), 85%, 55%);
+  --secondary: hsl(var(--hue-secondary), 85%, 45%);
+  --bg-dark: hsl(220, 40%, 6%);
+  --panel-bg: hsla(222, 25%, 10%, 0.55);
+  --border-color: hsla(var(--hue-primary), 30%, 30%, 0.25);
+  --input-bg: hsla(222, 25%, 6%, 0.5);
+  --input-border: hsla(222, 20%, 25%, 0.6);
+  --text-primary: #f8fafc;
+  --text-secondary: #cbd5e1;
+  --text-muted: #94a3b8;
+  --error: #fca5a5;
+  --error-bg: rgba(239, 68, 68, 0.15);
+  --error-border: rgba(239, 68, 68, 0.3);
+}
+
+/* Global Background Setup */
+body {
+  background: radial-gradient(circle at center, hsl(var(--hue-primary), 35%, 12%) 0%, var(--bg-dark) 100%) !important;
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
+  color: var(--text-primary) !important;
+  min-height: 100vh;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Main Container Grid & Wrapping */
+#kc-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 480px;
+  padding: 1.5rem;
+}
+
+/* Header & Application Brand Title */
+#kc-header, .login-pf-page-header {
+  margin-bottom: 2rem !important;
+  text-align: center;
+}
+
+#kc-header-wrapper {
+  font-family: 'Outfit', sans-serif !important;
+  font-size: 2.2rem !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.03em !important;
+  background: linear-gradient(135deg, var(--primary) 0%, hsl(var(--hue-secondary), 85%, 60%) 100%) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  text-transform: none !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+#kc-header-wrapper::before {
+  content: "🏢";
+  font-size: 1.8rem;
+}
+
+#kc-header-wrapper::after {
+  content: " ReserveFlow";
+  text-transform: none;
+}
+
+/* Hide default text or adjust if they are empty */
+.login-pf-brand {
+  display: none !important;
+}
+
+/* Glassmorphism Panel Wrapper (Login Card) */
+#kc-content, .card-pf {
+  width: 100%;
+  background: var(--panel-bg) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 10px 40px 0 rgba(0, 0, 0, 0.45) !important;
+  padding: 2.2rem !important;
+  box-sizing: border-box;
+}
+
+/* Welcome Titles */
+#kc-page-title, h1 {
+  font-family: 'Outfit', sans-serif !important;
+  font-size: 1.5rem !important;
+  font-weight: 700 !important;
+  color: var(--text-primary) !important;
+  margin-bottom: 1.5rem !important;
+  text-align: center;
+  letter-spacing: -0.01em;
+}
+
+/* Form Fields & Label Styling */
+.form-group, .kcFormGroupClass {
+  margin-bottom: 1.25rem !important;
+}
+
+label, .control-label {
+  display: block !important;
+  font-size: 0.85rem !important;
+  font-weight: 600 !important;
+  color: var(--text-secondary) !important;
+  margin-bottom: 0.5rem !important;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Input Fields Style Override */
+input[type="text"], 
+input[type="password"], 
+input[type="email"], 
+.form-control {
+  width: 100% !important;
+  padding: 0.75rem 1rem !important;
+  border-radius: 8px !important;
+  background: var(--input-bg) !important;
+  border: 1px solid var(--input-border) !important;
+  color: var(--text-primary) !important;
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
+  font-size: 0.95rem !important;
+  box-sizing: border-box;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease !important;
+}
+
+input[type="text"]:focus, 
+input[type="password"]:focus, 
+input[type="email"]:focus, 
+.form-control:focus {
+  outline: none !important;
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 0 3px hsla(var(--hue-primary), 85%, 62%, 0.2) !important;
+  background: hsla(222, 25%, 4%, 0.7) !important;
+}
+
+/* Styling Checkbox/Radio options */
+.checkbox label, .radio label {
+  color: var(--text-secondary) !important;
+  font-size: 0.9rem !important;
+  text-transform: none !important;
+  letter-spacing: normal !important;
+  display: flex !important;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+}
+
+input[type="checkbox"] {
+  accent-color: var(--primary) !important;
+  width: 16px;
+  height: 16px;
+}
+
+/* Form Helper Links (Reset password, Forgot login) */
+#kc-registration, .login-pf-signup, #kc-form-options a, a {
+  color: var(--secondary) !important;
+  font-size: 0.9rem !important;
+  font-weight: 600 !important;
+  text-decoration: none !important;
+  transition: opacity 0.2s ease !important;
+}
+
+#kc-registration a:hover, #kc-form-options a:hover, a:hover {
+  text-decoration: underline !important;
+  opacity: 0.9;
+}
+
+#kc-form-options {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem !important;
+}
+
+/* Primary Action Buttons (Sign In / Register / Reset) */
+.btn-primary, 
+.kcButtonPrimaryClass,
+input[type="submit"] {
+  width: 100% !important;
+  padding: 0.8rem 1.5rem !important;
+  border-radius: 8px !important;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%) !important;
+  border: none !important;
+  color: #ffffff !important;
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
+  font-size: 1rem !important;
+  font-weight: 700 !important;
+  cursor: pointer !important;
+  box-shadow: 0 4px 15px hsla(var(--hue-primary), 85%, 62%, 0.3) !important;
+  transition: transform 0.1s ease, box-shadow 0.2s ease, opacity 0.2s ease !important;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+.btn-primary:hover, 
+.kcButtonPrimaryClass:hover,
+input[type="submit"]:hover {
+  opacity: 0.95 !important;
+  box-shadow: 0 6px 20px hsla(var(--hue-primary), 85%, 62%, 0.45) !important;
+}
+
+.btn-primary:active, 
+.kcButtonPrimaryClass:active,
+input[type="submit"]:active {
+  transform: scale(0.98) !important;
+}
+
+/* Feedback & Error / Alert Panels */
+#kc-feedback, .alert {
+  padding: 0.8rem 1.2rem !important;
+  border-radius: 8px !important;
+  margin-bottom: 1.25rem !important;
+  font-size: 0.9rem !important;
+  font-weight: 500 !important;
+  display: flex !important;
+  align-items: center;
+  gap: 0.5rem;
+  box-sizing: border-box;
+}
+
+.alert-error, .alert-danger, .kc-feedback-text.instruction, .kc-feedback-text.error {
+  background: var(--error-bg) !important;
+  border: 1px solid var(--error-border) !important;
+  color: var(--error) !important;
+}
+
+.alert-warning {
+  background: rgba(245, 158, 11, 0.15) !important;
+  border: 1px solid rgba(245, 158, 11, 0.3) !important;
+  color: #fde68a !important;
+}
+
+.alert-success {
+  background: rgba(16, 185, 129, 0.15) !important;
+  border: 1px solid rgba(16, 185, 129, 0.3) !important;
+  color: #a7f3d0 !important;
+}
+
+/* Hide default icons or clean them */
+.kc-feedback-text span {
+  display: inline-block;
+}
+
+/* Log in with social providers */
+#kc-social-providers {
+  margin-top: 1.5rem !important;
+  border-top: 1px dashed var(--border-color);
+  padding-top: 1.5rem !important;
+}
+
+#kc-social-providers ul {
+  list-style: none !important;
+  padding: 0 !important;
+  margin: 0.5rem 0 0 0 !important;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.5rem;
+}
+
+#kc-social-providers a {
+  background: var(--input-bg) !important;
+  border: 1px solid var(--input-border) !important;
+  padding: 0.65rem !important;
+  border-radius: 8px !important;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+#kc-social-providers a:hover {
+  border-color: var(--primary) !important;
+}
+
+/* Registration flow specific adjustments */
+#kc-registration {
+  margin-top: 1.5rem !important;
+  text-align: center;
+  font-size: 0.9rem !important;
+  color: var(--text-muted) !important;
+}
+
+#kc-registration span {
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+/* Password eye icons or extra items */
+.kc-input-group {
+  position: relative;
+}
+
+/* Clean up PatternFly default elements */
+.login-pf-page-footer {
+  display: none !important;
+}

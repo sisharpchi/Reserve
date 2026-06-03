@@ -50,6 +50,7 @@ services:
     volumes:
       - ./.containers/keycloak:/opt/keycloak/data
       - ./.files/keycloak:/opt/keycloak/data/import
+      # - ./web-keycloak-theme:/opt/keycloak/themes/reserveflow-theme
     ports:
       - "18080:8080"
 
