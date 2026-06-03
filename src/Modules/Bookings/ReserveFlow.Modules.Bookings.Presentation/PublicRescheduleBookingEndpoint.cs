@@ -4,27 +4,29 @@ using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Routing;
 using ReserveFlow.Common.Application.Abstractions;
 using ReserveFlow.Common.Application.Messaging;
+using ReserveFlow.Common.Application.RateLimiting;
 using ReserveFlow.Common.Presentation.Endpoints;
 using ReserveFlow.Modules.Bookings.Application.Bookings;
-using ReserveFlow.Modules.Bookings.Application.Bookings.GetPublicBooking;
+using ReserveFlow.Modules.Bookings.Application.Bookings.PublicRescheduleBooking;
 
 namespace ReserveFlow.Modules.Bookings.Presentation;
 
-internal sealed class GetPublicBookingEndpoint : IEndpoint
+internal sealed class PublicRescheduleBookingEndpoint : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapGet("/api/public/tenants/{tenantSlug}/bookings/{publicReference}", Handle)
+        app.MapPost("/api/public/tenants/{tenantSlug}/bookings/{publicReference}/reschedule", Handle)
+            .RequireRateLimiting(RateLimitPolicies.PublicBooking)
             .WithTags("Public Bookings")
-            .WithName("GetPublicBooking");
+            .WithName("PublicRescheduleBooking");
     }
 
     private static async Task<Results<Ok<BookingResponse>, NotFound>> Handle(
         string tenantSlug,
         string publicReference,
-        string accessToken,
+        PublicRescheduleBookingRequest request,
         ITenantSlugResolver tenantSlugResolver,
-        IQueryHandler<GetPublicBookingQuery, BookingResponse?> handler,
+        ICommandHandler<PublicRescheduleBookingCommand, BookingResponse?> handler,
         CancellationToken cancellationToken)
     {
         Guid? tenantId = await tenantSlugResolver.ResolveTenantIdAsync(tenantSlug, cancellationToken);
@@ -35,7 +37,13 @@ internal sealed class GetPublicBookingEndpoint : IEndpoint
         }
 
         BookingResponse? response = await handler.Handle(
-            new GetPublicBookingQuery(tenantId.Value, publicReference, accessToken),
+            new PublicRescheduleBookingCommand(
+                tenantId.Value,
+                publicReference,
+                request.AccessToken,
+                request.StartsAtUtc,
+                request.EndsAtUtc,
+                DateTimeOffset.UtcNow),
             cancellationToken);
 
         return response is null ? TypedResults.NotFound() : TypedResults.Ok(response);

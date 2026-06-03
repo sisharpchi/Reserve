@@ -11,6 +11,7 @@ public sealed class GetPublicBookingQueryHandler(IBookingRepository bookingRepos
         CancellationToken cancellationToken = default)
     {
         Booking? booking = await bookingRepository.FindByPublicLookupAsync(
+            query.TenantId,
             query.PublicReference,
             query.AccessToken,
             cancellationToken);

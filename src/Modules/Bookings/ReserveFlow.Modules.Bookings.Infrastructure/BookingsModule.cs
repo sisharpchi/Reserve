@@ -17,6 +17,7 @@ using ReserveFlow.Modules.Bookings.Application.Bookings.CreateBooking;
 using ReserveFlow.Modules.Bookings.Application.Bookings.ExpirePendingBooking;
 using ReserveFlow.Modules.Bookings.Application.Bookings.GetPublicBooking;
 using ReserveFlow.Modules.Bookings.Application.Bookings.MarkBookingAsNoShow;
+using ReserveFlow.Modules.Bookings.Application.Bookings.PublicRescheduleBooking;
 using ReserveFlow.Modules.Bookings.Application.Bookings.RescheduleBooking;
 using ReserveFlow.Modules.Bookings.Infrastructure.Bookings.Availability;
 using ReserveFlow.Modules.Bookings.Infrastructure.Bookings.TenantStatus;
@@ -52,6 +53,7 @@ public static class BookingsModule
         services.AddScoped<ICommandHandler<CreateBookingCommand, BookingResponse>, CreateBookingCommandHandler>();
         services.AddScoped<IQueryHandler<GetPublicBookingQuery, BookingResponse?>, GetPublicBookingQueryHandler>();
         services.AddScoped<ICommandHandler<CancelPublicBookingCommand, BookingResponse?>, CancelPublicBookingCommandHandler>();
+        services.AddScoped<ICommandHandler<PublicRescheduleBookingCommand, BookingResponse?>, PublicRescheduleBookingCommandHandler>();
         services.AddScoped<ICommandHandler<CancelBookingCommand, BookingResponse?>, CancelBookingCommandHandler>();
         services.AddScoped<ICommandHandler<RescheduleBookingCommand, BookingResponse?>, RescheduleBookingCommandHandler>();
         services.AddScoped<ICommandHandler<ConfirmBookingCommand, BookingResponse?>, ConfirmBookingCommandHandler>();

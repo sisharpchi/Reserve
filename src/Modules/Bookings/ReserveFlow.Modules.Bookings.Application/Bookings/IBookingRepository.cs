@@ -16,6 +16,7 @@ public interface IBookingRepository
         CancellationToken cancellationToken = default);
 
     Task<Booking?> FindByPublicLookupAsync(
+        Guid tenantId,
         string publicReference,
         string accessToken,
         CancellationToken cancellationToken = default);

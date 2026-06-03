@@ -6,23 +6,24 @@ using ReserveFlow.Common.Application.Abstractions;
 using ReserveFlow.Common.Application.Messaging;
 using ReserveFlow.Common.Presentation.Endpoints;
 using ReserveFlow.Modules.Catalog.Application.Services;
-using ReserveFlow.Modules.Catalog.Application.Services.GetActiveServices;
+using ReserveFlow.Modules.Catalog.Application.Services.GetActiveService;
 
 namespace ReserveFlow.Modules.Catalog.Presentation;
 
-internal sealed class GetTenantServicesEndpoint : IEndpoint
+internal sealed class GetTenantServiceEndpoint : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapGet("/api/public/tenants/{tenantSlug}/services", Handle)
+        app.MapGet("/api/public/tenants/{tenantSlug}/services/{serviceId:guid}", Handle)
             .WithTags("Public Catalog")
-            .WithName("GetTenantServices");
+            .WithName("GetTenantService");
     }
 
-    private static async Task<Results<Ok<IReadOnlyList<ServiceResponse>>, NotFound>> Handle(
+    private static async Task<Results<Ok<ServiceResponse>, NotFound>> Handle(
         string tenantSlug,
+        Guid serviceId,
         ITenantSlugResolver tenantSlugResolver,
-        IQueryHandler<GetActiveServicesQuery, IReadOnlyList<ServiceResponse>> handler,
+        IQueryHandler<GetActiveServiceQuery, ServiceResponse?> handler,
         CancellationToken cancellationToken)
     {
         Guid? tenantId = await tenantSlugResolver.ResolveTenantIdAsync(tenantSlug, cancellationToken);
@@ -32,10 +33,10 @@ internal sealed class GetTenantServicesEndpoint : IEndpoint
             return TypedResults.NotFound();
         }
 
-        IReadOnlyList<ServiceResponse> response = await handler.Handle(
-            new GetActiveServicesQuery(tenantId.Value),
+        ServiceResponse? response = await handler.Handle(
+            new GetActiveServiceQuery(tenantId.Value, serviceId),
             cancellationToken);
 
-        return TypedResults.Ok(response);
+        return response is null ? TypedResults.NotFound() : TypedResults.Ok(response);
     }
 }

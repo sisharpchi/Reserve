@@ -8,6 +8,11 @@ public interface IServiceRepository
 
     Task<Service?> GetByIdAsync(Guid serviceId, CancellationToken cancellationToken = default);
 
+    Task<Service?> GetActiveByIdAsync(
+        Guid tenantId,
+        Guid serviceId,
+        CancellationToken cancellationToken = default);
+
     Task<IReadOnlyList<Service>> GetByTenantIdAsync(
         Guid tenantId,
         CancellationToken cancellationToken = default);

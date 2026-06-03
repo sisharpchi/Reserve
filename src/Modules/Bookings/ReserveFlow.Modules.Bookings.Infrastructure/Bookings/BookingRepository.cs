@@ -38,11 +38,13 @@ internal sealed class BookingRepository(BookingsDbContext dbContext) : IBookingR
     }
 
     public async Task<Booking?> FindByPublicLookupAsync(
+        Guid tenantId,
         string publicReference,
         string accessToken,
         CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(publicReference) ||
+        if (tenantId == Guid.Empty ||
+            string.IsNullOrWhiteSpace(publicReference) ||
             string.IsNullOrWhiteSpace(accessToken))
         {
             return null;
@@ -52,7 +54,8 @@ internal sealed class BookingRepository(BookingsDbContext dbContext) : IBookingR
         string normalizedAccessToken = accessToken.Trim();
 
         return await dbContext.Bookings.FirstOrDefaultAsync(
-            booking => booking.PublicReference == normalizedPublicReference &&
+            booking => booking.TenantId == tenantId &&
+                       booking.PublicReference == normalizedPublicReference &&
                        booking.AccessToken == normalizedAccessToken,
             cancellationToken);
     }

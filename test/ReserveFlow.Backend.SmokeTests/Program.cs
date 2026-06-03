@@ -473,16 +473,61 @@ var checks = new List<(string Name, bool Passed)>
         "IdempotencyKey")),
     ("bookings presentation has configure policy endpoint", HasEndpointNamed(ReserveFlow.Modules.Bookings.Presentation.AssemblyReference.Assembly, "ConfigureBookingPolicyEndpoint")),
     ("bookings presentation has cancel endpoint", HasEndpointNamed(ReserveFlow.Modules.Bookings.Presentation.AssemblyReference.Assembly, "CancelBookingEndpoint")),
+    ("public booking lookup endpoint uses tenant slug route", SourceContains(
+        "src/Modules/Bookings/ReserveFlow.Modules.Bookings.Presentation/GetPublicBookingEndpoint.cs",
+        "\"/api/public/tenants/{tenantSlug}/bookings/{publicReference}\"")),
+    ("public booking lookup endpoint resolves tenant slug", SourceContains(
+        "src/Modules/Bookings/ReserveFlow.Modules.Bookings.Presentation/GetPublicBookingEndpoint.cs",
+        "ITenantSlugResolver")),
+    ("public booking query captures tenant id", HasPublicProperty(
+        typeof(ReserveFlow.Modules.Bookings.Application.Bookings.GetPublicBooking.GetPublicBookingQuery),
+        "TenantId")),
     ("bookings presentation has public cancel endpoint", HasEndpointNamed(ReserveFlow.Modules.Bookings.Presentation.AssemblyReference.Assembly, "PublicCancelBookingEndpoint")),
+    ("public cancel endpoint uses tenant slug route", SourceContains(
+        "src/Modules/Bookings/ReserveFlow.Modules.Bookings.Presentation/PublicCancelBookingEndpoint.cs",
+        "\"/api/public/tenants/{tenantSlug}/bookings/{publicReference}/cancel\"")),
+    ("public cancel endpoint resolves tenant slug", SourceContains(
+        "src/Modules/Bookings/ReserveFlow.Modules.Bookings.Presentation/PublicCancelBookingEndpoint.cs",
+        "ITenantSlugResolver")),
     ("public cancel request captures access token", HasTypeWithPublicProperty(
         ReserveFlow.Modules.Bookings.Presentation.AssemblyReference.Assembly,
         "PublicCancelBookingRequest",
         "AccessToken")),
     ("bookings module has public cancel command", HasTypeNamed(typeof(BookingResponse).Assembly, "CancelPublicBookingCommand")),
+    ("public cancel command captures tenant id", HasPublicProperty(
+        typeof(ReserveFlow.Modules.Bookings.Application.Bookings.CancelPublicBooking.CancelPublicBookingCommand),
+        "TenantId")),
     ("bookings module has public cancel handler", HasTypeNamed(typeof(BookingResponse).Assembly, "CancelPublicBookingCommandHandler")),
     ("public cancel endpoint uses public lookup credentials", PublicCancelEndpointUsesPublicLookupCredentials()),
     ("public cancel handler uses public lookup and cancellation policy", PublicCancelHandlerUsesPublicLookupAndPolicy()),
+    ("booking repository public lookup is tenant scoped", PublicBookingRepositoryLookupIsTenantScoped()),
     ("bookings presentation has reschedule endpoint", HasEndpointNamed(ReserveFlow.Modules.Bookings.Presentation.AssemblyReference.Assembly, "RescheduleBookingEndpoint")),
+    ("bookings presentation has public reschedule endpoint", HasEndpointNamed(
+        ReserveFlow.Modules.Bookings.Presentation.AssemblyReference.Assembly,
+        "PublicRescheduleBookingEndpoint")),
+    ("public reschedule endpoint uses tenant slug route", SourceContains(
+        "src/Modules/Bookings/ReserveFlow.Modules.Bookings.Presentation/PublicRescheduleBookingEndpoint.cs",
+        "\"/api/public/tenants/{tenantSlug}/bookings/{publicReference}/reschedule\"")),
+    ("public reschedule endpoint resolves tenant slug", SourceContains(
+        "src/Modules/Bookings/ReserveFlow.Modules.Bookings.Presentation/PublicRescheduleBookingEndpoint.cs",
+        "ITenantSlugResolver")),
+    ("public reschedule request captures access token", HasTypeWithPublicProperty(
+        ReserveFlow.Modules.Bookings.Presentation.AssemblyReference.Assembly,
+        "PublicRescheduleBookingRequest",
+        "AccessToken")),
+    ("bookings module has public reschedule command", HasTypeNamed(
+        typeof(BookingResponse).Assembly,
+        "PublicRescheduleBookingCommand")),
+    ("public reschedule command captures tenant id", SourceContains(
+        "src/Modules/Bookings/ReserveFlow.Modules.Bookings.Application/Bookings/PublicRescheduleBooking/PublicRescheduleBookingCommand.cs",
+        "Guid TenantId")),
+    ("bookings module has public reschedule handler", HasTypeNamed(
+        typeof(BookingResponse).Assembly,
+        "PublicRescheduleBookingCommandHandler")),
+    ("public reschedule handler uses public lookup, policy, availability, overlap, and history", PublicRescheduleHandlerUsesPublicLookupPolicyAvailabilityAndHistory()),
+    ("bookings module registers public reschedule handler", SourceContains(
+        "src/Modules/Bookings/ReserveFlow.Modules.Bookings.Infrastructure/BookingsModule.cs",
+        "PublicRescheduleBookingCommandHandler")),
     ("bookings presentation has confirm endpoint", HasEndpointNamed(ReserveFlow.Modules.Bookings.Presentation.AssemblyReference.Assembly, "ConfirmBookingEndpoint")),
     ("bookings presentation has expire endpoint", HasEndpointNamed(ReserveFlow.Modules.Bookings.Presentation.AssemblyReference.Assembly, "ExpirePendingBookingEndpoint")),
     ("bookings presentation has complete endpoint", HasEndpointNamed(ReserveFlow.Modules.Bookings.Presentation.AssemblyReference.Assembly, "CompleteBookingEndpoint")),
@@ -612,14 +657,42 @@ var checks = new List<(string Name, bool Passed)>
     ("catalog module has deactivate service handler", HasTypeNamed(typeof(ServiceResponse).Assembly, "DeactivateServiceCommandHandler")),
     ("catalog service repository can lookup service by id", typeof(IServiceRepository).GetMethod("GetByIdAsync") is not null),
     ("catalog service repository can list services by tenant", typeof(IServiceRepository).GetMethod("GetByTenantIdAsync") is not null),
+    ("catalog service repository can lookup active service by tenant and id", typeof(IServiceRepository).GetMethod("GetActiveByIdAsync") is not null),
     ("catalog module has admin services query", HasTypeNamed(typeof(ServiceResponse).Assembly, "GetServicesQuery")),
     ("catalog module has admin services query handler", HasTypeNamed(typeof(ServiceResponse).Assembly, "GetServicesQueryHandler")),
     ("catalog module has admin service detail query", HasTypeNamed(typeof(ServiceResponse).Assembly, "GetServiceQuery")),
     ("catalog module has admin service detail query handler", HasTypeNamed(typeof(ServiceResponse).Assembly, "GetServiceQueryHandler")),
+    ("catalog module has public active service detail query", HasTypeNamed(typeof(ServiceResponse).Assembly, "GetActiveServiceQuery")),
+    ("catalog module has public active service detail handler", HasTypeNamed(typeof(ServiceResponse).Assembly, "GetActiveServiceQueryHandler")),
     ("catalog presentation has admin services endpoint", HasEndpointNamed(ReserveFlow.Modules.Catalog.Presentation.AssemblyReference.Assembly, "GetAdminServicesEndpoint")),
     ("catalog presentation has admin service detail endpoint", HasEndpointNamed(ReserveFlow.Modules.Catalog.Presentation.AssemblyReference.Assembly, "GetAdminServiceEndpoint")),
     ("catalog presentation has update service endpoint", HasEndpointNamed(ReserveFlow.Modules.Catalog.Presentation.AssemblyReference.Assembly, "UpdateServiceEndpoint")),
     ("catalog presentation has deactivate service endpoint", HasEndpointNamed(ReserveFlow.Modules.Catalog.Presentation.AssemblyReference.Assembly, "DeactivateServiceEndpoint")),
+    ("public services endpoint uses tenant slug route", SourceContains(
+        "src/Modules/Catalog/ReserveFlow.Modules.Catalog.Presentation/GetTenantServicesEndpoint.cs",
+        "\"/api/public/tenants/{tenantSlug}/services\"")),
+    ("public services endpoint resolves tenant slug", SourceContains(
+        "src/Modules/Catalog/ReserveFlow.Modules.Catalog.Presentation/GetTenantServicesEndpoint.cs",
+        "ITenantSlugResolver")),
+    ("public services endpoint returns not found for unknown tenant slug", SourceContains(
+        "src/Modules/Catalog/ReserveFlow.Modules.Catalog.Presentation/GetTenantServicesEndpoint.cs",
+        "TypedResults.NotFound()")),
+    ("catalog presentation has public service detail endpoint", HasEndpointNamed(ReserveFlow.Modules.Catalog.Presentation.AssemblyReference.Assembly, "GetTenantServiceEndpoint")),
+    ("public service detail endpoint uses tenant slug route", SourceContains(
+        "src/Modules/Catalog/ReserveFlow.Modules.Catalog.Presentation/GetTenantServiceEndpoint.cs",
+        "\"/api/public/tenants/{tenantSlug}/services/{serviceId:guid}\"")),
+    ("public service detail endpoint resolves tenant slug", SourceContains(
+        "src/Modules/Catalog/ReserveFlow.Modules.Catalog.Presentation/GetTenantServiceEndpoint.cs",
+        "ITenantSlugResolver")),
+    ("public service detail endpoint returns not found for unknown tenant slug or inactive service", SourceContains(
+        "src/Modules/Catalog/ReserveFlow.Modules.Catalog.Presentation/GetTenantServiceEndpoint.cs",
+        "TypedResults.NotFound()")),
+    ("public active service detail handler uses active tenant scoped lookup", SourceContains(
+        "src/Modules/Catalog/ReserveFlow.Modules.Catalog.Application/Services/GetActiveService/GetActiveServiceQueryHandler.cs",
+        "GetActiveByIdAsync")),
+    ("catalog module registers public active service detail query handler", SourceContains(
+        "src/Modules/Catalog/ReserveFlow.Modules.Catalog.Infrastructure/CatalogModule.cs",
+        "GetActiveServiceQueryHandler")),
     ("service update changes details and raises domain event", ServiceUpdateChangesDetailsAndRaisesDomainEvent()),
     ("service deactivate changes active flag and raises domain event", ServiceDeactivateChangesActiveFlagAndRaisesDomainEvent()),
     ("staff member create normalizes data and raises domain event", StaffMemberCreateNormalizesDataAndRaisesDomainEvent()),
@@ -672,6 +745,15 @@ var checks = new List<(string Name, bool Passed)>
     ("scheduling presentation has create staff unavailable period endpoint", HasEndpointNamed(ReserveFlow.Modules.Scheduling.Presentation.AssemblyReference.Assembly, "CreateStaffUnavailablePeriodEndpoint")),
     ("scheduling presentation has create resource unavailable period endpoint", HasEndpointNamed(ReserveFlow.Modules.Scheduling.Presentation.AssemblyReference.Assembly, "CreateResourceUnavailablePeriodEndpoint")),
     ("scheduling presentation has tenant availability endpoint", HasEndpointNamed(ReserveFlow.Modules.Scheduling.Presentation.AssemblyReference.Assembly, "GetTenantAvailableSlotsEndpoint")),
+    ("public availability endpoint uses tenant slug route", SourceContains(
+        "src/Modules/Scheduling/ReserveFlow.Modules.Scheduling.Presentation/GetTenantAvailableSlotsEndpoint.cs",
+        "\"/api/public/tenants/{tenantSlug}/availability\"")),
+    ("public availability endpoint resolves tenant slug", SourceContains(
+        "src/Modules/Scheduling/ReserveFlow.Modules.Scheduling.Presentation/GetTenantAvailableSlotsEndpoint.cs",
+        "ITenantSlugResolver")),
+    ("public availability endpoint returns not found for unknown tenant slug", SourceContains(
+        "src/Modules/Scheduling/ReserveFlow.Modules.Scheduling.Presentation/GetTenantAvailableSlotsEndpoint.cs",
+        "TypedResults.NotFound()")),
     ("working hour create targets staff or resource and raises domain event", WorkingHourCreateTargetsStaffOrResourceAndRaisesDomainEvent()),
     ("unavailable period create targets staff or resource and raises domain event", UnavailablePeriodCreateTargetsStaffOrResourceAndRaisesDomainEvent()),
     ("booking availability checker excludes unavailable periods", SourceContains(
@@ -1745,7 +1827,7 @@ static bool PublicCancelEndpointUsesPublicLookupCredentials()
 {
     string endpointFile = "src/Modules/Bookings/ReserveFlow.Modules.Bookings.Presentation/PublicCancelBookingEndpoint.cs";
 
-    return SourceContains(endpointFile, "/api/public/bookings/{publicReference}/cancel") &&
+    return SourceContains(endpointFile, "/api/public/tenants/{tenantSlug}/bookings/{publicReference}/cancel") &&
            SourceContains(endpointFile, "PublicCancelBookingRequest") &&
            SourceContains(endpointFile, "CancelPublicBookingCommand") &&
            !SourceContains(endpointFile, "{bookingId:guid}");
@@ -1758,6 +1840,30 @@ static bool PublicCancelHandlerUsesPublicLookupAndPolicy()
     return SourceContains(handlerFile, "FindByPublicLookupAsync") &&
            SourceContains(handlerFile, "EnsureCancellationAllowed") &&
            SourceContains(handlerFile, "BookingHistoryEntry.Record");
+}
+
+static bool PublicBookingRepositoryLookupIsTenantScoped()
+{
+    string repositoryFile = "src/Modules/Bookings/ReserveFlow.Modules.Bookings.Infrastructure/Bookings/BookingRepository.cs";
+
+    return SourceContains(repositoryFile, "FindByPublicLookupAsync(") &&
+           SourceContains(repositoryFile, "Guid tenantId") &&
+           SourceContains(repositoryFile, "tenantId == Guid.Empty") &&
+           SourceContains(repositoryFile, "booking.TenantId == tenantId") &&
+           SourceContains(repositoryFile, "booking.PublicReference == normalizedPublicReference");
+}
+
+static bool PublicRescheduleHandlerUsesPublicLookupPolicyAvailabilityAndHistory()
+{
+    string handlerFile = "src/Modules/Bookings/ReserveFlow.Modules.Bookings.Application/Bookings/PublicRescheduleBooking/PublicRescheduleBookingCommandHandler.cs";
+
+    return SourceContains(handlerFile, "FindByPublicLookupAsync") &&
+           SourceContains(handlerFile, "IBookingPolicyRepository") &&
+           SourceContains(handlerFile, "EnsureBookingCanStartAt") &&
+           SourceContains(handlerFile, "IBookingAvailabilityChecker") &&
+           SourceContains(handlerFile, "HasOverlapAsync") &&
+           SourceContains(handlerFile, "BookingHistoryEntry.Record") &&
+           SourceContains(handlerFile, "\"Public booking rescheduled\"");
 }
 
 static bool PostgresDatabaseBootstrapperUsesMaintenanceConnection()

@@ -19,6 +19,18 @@ internal sealed class ServiceRepository(CatalogDbContext dbContext) : IServiceRe
             cancellationToken);
     }
 
+    public async Task<Service?> GetActiveByIdAsync(
+        Guid tenantId,
+        Guid serviceId,
+        CancellationToken cancellationToken = default)
+    {
+        return await dbContext.Services.FirstOrDefaultAsync(
+            service => service.TenantId == tenantId &&
+                       service.Id == serviceId &&
+                       service.IsActive,
+            cancellationToken);
+    }
+
     public async Task<IReadOnlyList<Service>> GetByTenantIdAsync(
         Guid tenantId,
         CancellationToken cancellationToken = default)
