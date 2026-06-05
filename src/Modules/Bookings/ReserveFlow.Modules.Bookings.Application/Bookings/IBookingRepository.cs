@@ -10,6 +10,20 @@ public interface IBookingRepository
         Guid bookingId,
         CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<Booking>> GetByTenantIdAsync(
+        Guid tenantId,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<Booking>> GetByTenantIdAndStaffMemberIdAsync(
+        Guid tenantId,
+        Guid staffMemberId,
+        CancellationToken cancellationToken = default);
+
+    Task<Booking?> GetByTenantIdAndIdAsync(
+        Guid tenantId,
+        Guid bookingId,
+        CancellationToken cancellationToken = default);
+
     Task<Booking?> FindByIdempotencyKeyAsync(
         Guid tenantId,
         string idempotencyKey,

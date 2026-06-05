@@ -245,6 +245,12 @@ var checks = new List<(string Name, bool Passed)>
     ("keycloak role parser accepts simple roles claims", KeycloakRoleParserAcceptsSimpleRoleClaims()),
     ("common infrastructure has http current user", typeof(HttpCurrentUser).Name == nameof(HttpCurrentUser)),
     ("common infrastructure has http tenant context", typeof(HttpTenantContext).Name == nameof(HttpTenantContext)),
+    ("current user exposes staff member id", SourceContains(
+        "src/Common/ReserveFlow.Common.Application/Abstractions/ICurrentUser.cs",
+        "Guid? StaffMemberId")),
+    ("http current user reads staff member id claim", SourceContains(
+        "src/Common/ReserveFlow.Common.Infrastructure/HttpCurrentUser.cs",
+        "\"staff_member_id\"")),
     ("http current user reads keycloak claims", HttpCurrentUserReadsKeycloakClaims()),
     ("http tenant context reads tenant headers before claims", HttpTenantContextReadsTenantHeadersBeforeClaims()),
     ("common application has tenant slug resolver abstraction", HasTypeNamed(typeof(ITenantContext).Assembly, "ITenantSlugResolver")),
@@ -394,6 +400,27 @@ var checks = new List<(string Name, bool Passed)>
     ("common outbox has logging dispatcher", typeof(LoggingOutboxMessageDispatcher).Name == nameof(LoggingOutboxMessageDispatcher)),
     ("bookings infrastructure has outbox processor", HasTypeNamed(typeof(BookingsDbContext).Assembly, "BookingsOutboxProcessorHostedService")),
     ("outbox message records processing outcome", OutboxMessageRecordsProcessingOutcome()),
+    ("bookings module has module message response dto", HasTypeNamed(typeof(CreateBookingCommand).Assembly, "ModuleMessageResponse")),
+    ("bookings module has module message repository abstraction", HasTypeNamed(typeof(CreateBookingCommand).Assembly, "IModuleMessageRepository")),
+    ("bookings module has module messages query", HasTypeNamed(typeof(CreateBookingCommand).Assembly, "GetModuleMessagesQuery")),
+    ("bookings module has module messages query handler", HasTypeNamed(typeof(CreateBookingCommand).Assembly, "GetModuleMessagesQueryHandler")),
+    ("bookings infrastructure has module message repository", HasTypeNamed(typeof(BookingsDbContext).Assembly, "ModuleMessageRepository")),
+    ("module message repository reads outbox messages by tenant", SourceContains(
+        "src/Modules/Bookings/ReserveFlow.Modules.Bookings.Infrastructure/ModuleMessages/ModuleMessageRepository.cs",
+        "message.TenantId == tenantId")),
+    ("bookings presentation has admin module messages endpoint", HasEndpointNamed(ReserveFlow.Modules.Bookings.Presentation.AssemblyReference.Assembly, "GetModuleMessagesEndpoint")),
+    ("admin module messages endpoint uses docs route", SourceContains(
+        "src/Modules/Bookings/ReserveFlow.Modules.Bookings.Presentation/GetModuleMessagesEndpoint.cs",
+        "\"/api/admin/module-messages\"")),
+    ("admin module messages endpoint requires tenant admin", SourceContains(
+        "src/Modules/Bookings/ReserveFlow.Modules.Bookings.Presentation/GetModuleMessagesEndpoint.cs",
+        "RequireAuthorization(TenantAdminPolicy)")),
+    ("admin module messages endpoint uses tenant context", SourceContains(
+        "src/Modules/Bookings/ReserveFlow.Modules.Bookings.Presentation/GetModuleMessagesEndpoint.cs",
+        "ITenantContext")),
+    ("bookings module registers module messages query handler", SourceContains(
+        "src/Modules/Bookings/ReserveFlow.Modules.Bookings.Infrastructure/BookingsModule.cs",
+        "IQueryHandler<GetModuleMessagesQuery, IReadOnlyList<ModuleMessageResponse>>")),
     ("bookings module has create command", typeof(CreateBookingCommand).Name == nameof(CreateBookingCommand)),
     ("booking create command captures customer contact", HasPublicProperty(typeof(CreateBookingCommand), "CustomerEmail")),
     ("booking create command captures idempotency key", HasPublicProperty(typeof(CreateBookingCommand), "IdempotencyKey")),
@@ -448,12 +475,84 @@ var checks = new List<(string Name, bool Passed)>
     ("bookings module has complete command", typeof(CompleteBookingCommand).Name == nameof(CompleteBookingCommand)),
     ("bookings module has complete handler", typeof(CompleteBookingCommandHandler).Name == nameof(CompleteBookingCommandHandler)),
     ("booking complete handler records history", HasConstructorParameterNamed(typeof(CompleteBookingCommandHandler), "IBookingHistoryRepository")),
+    ("bookings presentation has admin complete endpoint", HasEndpointNamed(ReserveFlow.Modules.Bookings.Presentation.AssemblyReference.Assembly, "AdminCompleteBookingEndpoint")),
+    ("admin complete endpoint uses admin route", SourceContains(
+        "src/Modules/Bookings/ReserveFlow.Modules.Bookings.Presentation/AdminCompleteBookingEndpoint.cs",
+        "\"/api/admin/bookings/{bookingId:guid}/complete\"")),
+    ("admin complete endpoint requires tenant admin", SourceContains(
+        "src/Modules/Bookings/ReserveFlow.Modules.Bookings.Presentation/AdminCompleteBookingEndpoint.cs",
+        "RequireAuthorization(TenantAdminPolicy)")),
+    ("admin complete endpoint uses complete command handler", SourceContains(
+        "src/Modules/Bookings/ReserveFlow.Modules.Bookings.Presentation/AdminCompleteBookingEndpoint.cs",
+        "CompleteBookingCommand")),
     ("bookings module has no-show command", typeof(MarkBookingAsNoShowCommand).Name == nameof(MarkBookingAsNoShowCommand)),
     ("bookings module has no-show handler", typeof(MarkBookingAsNoShowCommandHandler).Name == nameof(MarkBookingAsNoShowCommandHandler)),
     ("booking no-show handler records history", HasConstructorParameterNamed(typeof(MarkBookingAsNoShowCommandHandler), "IBookingHistoryRepository")),
+    ("bookings presentation has admin no-show endpoint", HasEndpointNamed(ReserveFlow.Modules.Bookings.Presentation.AssemblyReference.Assembly, "AdminMarkBookingAsNoShowEndpoint")),
+    ("admin no-show endpoint uses admin route", SourceContains(
+        "src/Modules/Bookings/ReserveFlow.Modules.Bookings.Presentation/AdminMarkBookingAsNoShowEndpoint.cs",
+        "\"/api/admin/bookings/{bookingId:guid}/no-show\"")),
+    ("admin no-show endpoint requires tenant admin", SourceContains(
+        "src/Modules/Bookings/ReserveFlow.Modules.Bookings.Presentation/AdminMarkBookingAsNoShowEndpoint.cs",
+        "RequireAuthorization(TenantAdminPolicy)")),
+    ("admin no-show endpoint uses no-show command handler", SourceContains(
+        "src/Modules/Bookings/ReserveFlow.Modules.Bookings.Presentation/AdminMarkBookingAsNoShowEndpoint.cs",
+        "MarkBookingAsNoShowCommand")),
     ("bookings module has response dto", typeof(BookingResponse).Name == nameof(BookingResponse)),
     ("booking response exposes concurrency token", HasPublicProperty(typeof(BookingResponse), "ConcurrencyToken")),
+    ("booking repository can list bookings by tenant", typeof(IBookingRepository).GetMethod("GetByTenantIdAsync") is not null),
+    ("booking repository can list bookings by tenant and staff member", typeof(IBookingRepository).GetMethod("GetByTenantIdAndStaffMemberIdAsync") is not null),
+    ("booking repository can lookup booking by tenant and id", typeof(IBookingRepository).GetMethod("GetByTenantIdAndIdAsync") is not null),
+    ("bookings module has admin bookings query", HasTypeNamed(typeof(BookingResponse).Assembly, "GetBookingsQuery")),
+    ("bookings module has admin bookings query handler", HasTypeNamed(typeof(BookingResponse).Assembly, "GetBookingsQueryHandler")),
+    ("bookings module has staff schedule query", HasTypeNamed(typeof(BookingResponse).Assembly, "GetStaffScheduleQuery")),
+    ("bookings module has staff schedule query handler", HasTypeNamed(typeof(BookingResponse).Assembly, "GetStaffScheduleQueryHandler")),
+    ("bookings module has admin booking detail query", HasTypeNamed(typeof(BookingResponse).Assembly, "GetBookingQuery")),
+    ("bookings module has admin booking detail query handler", HasTypeNamed(typeof(BookingResponse).Assembly, "GetBookingQueryHandler")),
     ("bookings presentation has create endpoint", HasEndpointNamed(ReserveFlow.Modules.Bookings.Presentation.AssemblyReference.Assembly, "CreateBookingEndpoint")),
+    ("bookings presentation has admin bookings endpoint", HasEndpointNamed(ReserveFlow.Modules.Bookings.Presentation.AssemblyReference.Assembly, "GetAdminBookingsEndpoint")),
+    ("admin bookings endpoint uses admin route", SourceContains(
+        "src/Modules/Bookings/ReserveFlow.Modules.Bookings.Presentation/GetAdminBookingsEndpoint.cs",
+        "\"/api/admin/bookings\"")),
+    ("admin bookings endpoint requires tenant admin", SourceContains(
+        "src/Modules/Bookings/ReserveFlow.Modules.Bookings.Presentation/GetAdminBookingsEndpoint.cs",
+        "RequireAuthorization(TenantAdminPolicy)")),
+    ("admin bookings endpoint uses tenant context", SourceContains(
+        "src/Modules/Bookings/ReserveFlow.Modules.Bookings.Presentation/GetAdminBookingsEndpoint.cs",
+        "ITenantContext")),
+    ("bookings presentation has admin booking detail endpoint", HasEndpointNamed(ReserveFlow.Modules.Bookings.Presentation.AssemblyReference.Assembly, "GetAdminBookingEndpoint")),
+    ("admin booking detail endpoint uses admin route", SourceContains(
+        "src/Modules/Bookings/ReserveFlow.Modules.Bookings.Presentation/GetAdminBookingEndpoint.cs",
+        "\"/api/admin/bookings/{bookingId:guid}\"")),
+    ("admin booking detail endpoint requires tenant admin", SourceContains(
+        "src/Modules/Bookings/ReserveFlow.Modules.Bookings.Presentation/GetAdminBookingEndpoint.cs",
+        "RequireAuthorization(TenantAdminPolicy)")),
+    ("admin booking detail endpoint uses tenant context", SourceContains(
+        "src/Modules/Bookings/ReserveFlow.Modules.Bookings.Presentation/GetAdminBookingEndpoint.cs",
+        "ITenantContext")),
+    ("bookings presentation has staff schedule endpoint", HasEndpointNamed(ReserveFlow.Modules.Bookings.Presentation.AssemblyReference.Assembly, "GetStaffScheduleEndpoint")),
+    ("staff schedule endpoint uses staff route", SourceContains(
+        "src/Modules/Bookings/ReserveFlow.Modules.Bookings.Presentation/GetStaffScheduleEndpoint.cs",
+        "\"/api/staff/me/schedule\"")),
+    ("staff schedule endpoint requires staff", SourceContains(
+        "src/Modules/Bookings/ReserveFlow.Modules.Bookings.Presentation/GetStaffScheduleEndpoint.cs",
+        "RequireAuthorization(StaffPolicy)")),
+    ("staff schedule endpoint uses current user staff member id", SourceContains(
+        "src/Modules/Bookings/ReserveFlow.Modules.Bookings.Presentation/GetStaffScheduleEndpoint.cs",
+        "currentUser.StaffMemberId")),
+    ("admin booking handlers use tenant scoped repository lookups", AdminBookingHandlersUseTenantScopedRepositoryLookups()),
+    ("staff schedule handler uses tenant and staff scoped repository lookup", SourceContains(
+        "src/Modules/Bookings/ReserveFlow.Modules.Bookings.Application/Bookings/GetStaffSchedule/GetStaffScheduleQueryHandler.cs",
+        "GetByTenantIdAndStaffMemberIdAsync")),
+    ("bookings module registers admin booking query handlers", SourceContains(
+        "src/Modules/Bookings/ReserveFlow.Modules.Bookings.Infrastructure/BookingsModule.cs",
+        "GetBookingsQueryHandler") &&
+        SourceContains(
+            "src/Modules/Bookings/ReserveFlow.Modules.Bookings.Infrastructure/BookingsModule.cs",
+            "GetBookingQueryHandler")),
+    ("bookings module registers staff schedule query handler", SourceContains(
+        "src/Modules/Bookings/ReserveFlow.Modules.Bookings.Infrastructure/BookingsModule.cs",
+        "IQueryHandler<GetStaffScheduleQuery, IReadOnlyList<BookingResponse>>")),
     ("public booking create endpoint uses tenant slug route", SourceContains(
         "src/Modules/Bookings/ReserveFlow.Modules.Bookings.Presentation/CreateBookingEndpoint.cs",
         "\"/api/public/tenants/{tenantSlug}/bookings\"")),
@@ -535,6 +634,24 @@ var checks = new List<(string Name, bool Passed)>
     ("notifications module has queue command", typeof(QueueNotificationCommand).Name == nameof(QueueNotificationCommand)),
     ("notifications module has queue handler", typeof(QueueNotificationCommandHandler).Name == nameof(QueueNotificationCommandHandler)),
     ("notifications module has response dto", typeof(NotificationResponse).Name == nameof(NotificationResponse)),
+    ("notification repository can list tenant notifications", SourceContains(
+        "src/Modules/Notifications/ReserveFlow.Modules.Notifications.Application/Notifications/INotificationRepository.cs",
+        "GetByTenantIdAsync")),
+    ("notifications module has tenant notifications query", HasTypeNamed(typeof(NotificationResponse).Assembly, "GetNotificationsQuery")),
+    ("notifications module has tenant notifications query handler", HasTypeNamed(typeof(NotificationResponse).Assembly, "GetNotificationsQueryHandler")),
+    ("notifications presentation has admin notifications endpoint", HasEndpointNamed(ReserveFlow.Modules.Notifications.Presentation.AssemblyReference.Assembly, "GetNotificationsEndpoint")),
+    ("admin notifications endpoint uses docs route", SourceContains(
+        "src/Modules/Notifications/ReserveFlow.Modules.Notifications.Presentation/GetNotificationsEndpoint.cs",
+        "\"/api/admin/notifications\"")),
+    ("admin notifications endpoint requires tenant admin", SourceContains(
+        "src/Modules/Notifications/ReserveFlow.Modules.Notifications.Presentation/GetNotificationsEndpoint.cs",
+        "RequireAuthorization(TenantAdminPolicy)")),
+    ("admin notifications endpoint uses tenant context", SourceContains(
+        "src/Modules/Notifications/ReserveFlow.Modules.Notifications.Presentation/GetNotificationsEndpoint.cs",
+        "ITenantContext")),
+    ("notifications module registers tenant notifications query handler", SourceContains(
+        "src/Modules/Notifications/ReserveFlow.Modules.Notifications.Infrastructure/NotificationsModule.cs",
+        "IQueryHandler<GetNotificationsQuery, IReadOnlyList<NotificationResponse>>")),
     ("notifications module has fake sender", typeof(FakeNotificationSender).Name == nameof(FakeNotificationSender)),
     ("notification queue normalizes data and raises domain event", NotificationQueueNormalizesDataAndRaisesDomainEvent()),
     ("audit module has record command", typeof(RecordAuditLogCommand).Name == nameof(RecordAuditLogCommand)),
@@ -559,6 +676,38 @@ var checks = new List<(string Name, bool Passed)>
     ("reporting module has daily query", typeof(GetDailyBookingReportQuery).Name == nameof(GetDailyBookingReportQuery)),
     ("reporting module has daily query handler", typeof(GetDailyBookingReportQueryHandler).Name == nameof(GetDailyBookingReportQueryHandler)),
     ("reporting module has response dto", typeof(DailyBookingReportResponse).Name == nameof(DailyBookingReportResponse)),
+    ("reporting presentation has tenant daily report endpoint", HasEndpointNamed(ReserveFlow.Modules.Reporting.Presentation.AssemblyReference.Assembly, "GetTenantDailyReportEndpoint")),
+    ("tenant daily report endpoint uses docs route", SourceContains(
+        "src/Modules/Reporting/ReserveFlow.Modules.Reporting.Presentation/GetTenantDailyReportEndpoint.cs",
+        "\"/api/admin/reports/daily\"")),
+    ("tenant daily report endpoint requires tenant admin", SourceContains(
+        "src/Modules/Reporting/ReserveFlow.Modules.Reporting.Presentation/GetTenantDailyReportEndpoint.cs",
+        "RequireAuthorization(TenantAdminPolicy)")),
+    ("tenant daily report endpoint uses tenant context", SourceContains(
+        "src/Modules/Reporting/ReserveFlow.Modules.Reporting.Presentation/GetTenantDailyReportEndpoint.cs",
+        "ITenantContext")),
+    ("tenant daily report endpoint uses daily query handler", SourceContains(
+        "src/Modules/Reporting/ReserveFlow.Modules.Reporting.Presentation/GetTenantDailyReportEndpoint.cs",
+        "GetDailyBookingReportQuery")),
+    ("reporting module has no-show response dto", HasTypeNamed(typeof(DailyBookingReportResponse).Assembly, "NoShowReportResponse")),
+    ("reporting module has no-show query", HasTypeNamed(typeof(DailyBookingReportResponse).Assembly, "GetNoShowReportQuery")),
+    ("reporting module has no-show query handler", HasTypeNamed(typeof(DailyBookingReportResponse).Assembly, "GetNoShowReportQueryHandler")),
+    ("reporting presentation has tenant no-show report endpoint", HasEndpointNamed(ReserveFlow.Modules.Reporting.Presentation.AssemblyReference.Assembly, "GetNoShowReportEndpoint")),
+    ("tenant no-show report endpoint uses docs route", SourceContains(
+        "src/Modules/Reporting/ReserveFlow.Modules.Reporting.Presentation/GetNoShowReportEndpoint.cs",
+        "\"/api/admin/reports/no-show\"")),
+    ("tenant no-show report endpoint requires tenant admin", SourceContains(
+        "src/Modules/Reporting/ReserveFlow.Modules.Reporting.Presentation/GetNoShowReportEndpoint.cs",
+        "RequireAuthorization(TenantAdminPolicy)")),
+    ("tenant no-show report endpoint uses tenant context", SourceContains(
+        "src/Modules/Reporting/ReserveFlow.Modules.Reporting.Presentation/GetNoShowReportEndpoint.cs",
+        "ITenantContext")),
+    ("tenant no-show report endpoint uses no-show query handler", SourceContains(
+        "src/Modules/Reporting/ReserveFlow.Modules.Reporting.Presentation/GetNoShowReportEndpoint.cs",
+        "GetNoShowReportQuery")),
+    ("reporting module registers no-show report query handler", SourceContains(
+        "src/Modules/Reporting/ReserveFlow.Modules.Reporting.Infrastructure/ReportingModule.cs",
+        "IQueryHandler<GetNoShowReportQuery, NoShowReportResponse?>")),
     ("daily booking report validates counts and raises domain event", DailyBookingReportValidatesCountsAndRaisesDomainEvent()),
     ("integrations module has accept webhook command", typeof(AcceptWebhookCommand).Name == nameof(AcceptWebhookCommand)),
     ("integrations module has accept webhook handler", typeof(AcceptWebhookCommandHandler).Name == nameof(AcceptWebhookCommandHandler)),
@@ -744,6 +893,22 @@ var checks = new List<(string Name, bool Passed)>
     ("scheduling presentation has create resource working hour endpoint", HasEndpointNamed(ReserveFlow.Modules.Scheduling.Presentation.AssemblyReference.Assembly, "CreateResourceWorkingHourEndpoint")),
     ("scheduling presentation has create staff unavailable period endpoint", HasEndpointNamed(ReserveFlow.Modules.Scheduling.Presentation.AssemblyReference.Assembly, "CreateStaffUnavailablePeriodEndpoint")),
     ("scheduling presentation has create resource unavailable period endpoint", HasEndpointNamed(ReserveFlow.Modules.Scheduling.Presentation.AssemblyReference.Assembly, "CreateResourceUnavailablePeriodEndpoint")),
+    ("scheduling presentation has staff own unavailable period endpoint", HasEndpointNamed(ReserveFlow.Modules.Scheduling.Presentation.AssemblyReference.Assembly, "CreateOwnStaffUnavailablePeriodEndpoint")),
+    ("staff own unavailable period endpoint uses staff route", SourceContains(
+        "src/Modules/Scheduling/ReserveFlow.Modules.Scheduling.Presentation/CreateOwnStaffUnavailablePeriodEndpoint.cs",
+        "\"/api/staff/unavailable-periods\"")),
+    ("staff own unavailable period endpoint requires staff", SourceContains(
+        "src/Modules/Scheduling/ReserveFlow.Modules.Scheduling.Presentation/CreateOwnStaffUnavailablePeriodEndpoint.cs",
+        "RequireAuthorization(StaffPolicy)")),
+    ("staff own unavailable period endpoint uses tenant context", SourceContains(
+        "src/Modules/Scheduling/ReserveFlow.Modules.Scheduling.Presentation/CreateOwnStaffUnavailablePeriodEndpoint.cs",
+        "ITenantContext")),
+    ("staff own unavailable period endpoint uses current user staff member id", SourceContains(
+        "src/Modules/Scheduling/ReserveFlow.Modules.Scheduling.Presentation/CreateOwnStaffUnavailablePeriodEndpoint.cs",
+        "currentUser.StaffMemberId")),
+    ("staff own unavailable period request does not accept tenant id", SourceDoesNotContain(
+        "src/Modules/Scheduling/ReserveFlow.Modules.Scheduling.Presentation/CreateOwnUnavailablePeriodRequest.cs",
+        "TenantId")),
     ("scheduling presentation has tenant availability endpoint", HasEndpointNamed(ReserveFlow.Modules.Scheduling.Presentation.AssemblyReference.Assembly, "GetTenantAvailableSlotsEndpoint")),
     ("public availability endpoint uses tenant slug route", SourceContains(
         "src/Modules/Scheduling/ReserveFlow.Modules.Scheduling.Presentation/GetTenantAvailableSlotsEndpoint.cs",
@@ -837,6 +1002,14 @@ static bool SourceContains(string relativePath, string expectedText)
 
     return File.Exists(path) &&
            File.ReadAllText(path).Contains(expectedText, StringComparison.Ordinal);
+}
+
+static bool SourceDoesNotContain(string relativePath, string unexpectedText)
+{
+    string path = Path.Combine(Directory.GetCurrentDirectory(), relativePath.Replace('/', Path.DirectorySeparatorChar));
+
+    return File.Exists(path) &&
+           !File.ReadAllText(path).Contains(unexpectedText, StringComparison.Ordinal);
 }
 
 static bool HasConstructorParameterNamed(Type type, string parameterTypeName)
@@ -1831,6 +2004,15 @@ static bool PublicCancelEndpointUsesPublicLookupCredentials()
            SourceContains(endpointFile, "PublicCancelBookingRequest") &&
            SourceContains(endpointFile, "CancelPublicBookingCommand") &&
            !SourceContains(endpointFile, "{bookingId:guid}");
+}
+
+static bool AdminBookingHandlersUseTenantScopedRepositoryLookups()
+{
+    string listHandlerFile = "src/Modules/Bookings/ReserveFlow.Modules.Bookings.Application/Bookings/GetBookings/GetBookingsQueryHandler.cs";
+    string detailHandlerFile = "src/Modules/Bookings/ReserveFlow.Modules.Bookings.Application/Bookings/GetBooking/GetBookingQueryHandler.cs";
+
+    return SourceContains(listHandlerFile, "GetByTenantIdAsync") &&
+           SourceContains(detailHandlerFile, "GetByTenantIdAndIdAsync");
 }
 
 static bool PublicCancelHandlerUsesPublicLookupAndPolicy()

@@ -20,6 +20,38 @@ internal sealed class BookingRepository(BookingsDbContext dbContext) : IBookingR
             .FirstOrDefaultAsync(booking => booking.Id == bookingId, cancellationToken);
     }
 
+    public async Task<IReadOnlyList<Booking>> GetByTenantIdAsync(
+        Guid tenantId,
+        CancellationToken cancellationToken = default)
+    {
+        return await dbContext.Bookings
+            .Where(booking => booking.TenantId == tenantId)
+            .OrderByDescending(booking => booking.StartsAtUtc)
+            .ToArrayAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<Booking>> GetByTenantIdAndStaffMemberIdAsync(
+        Guid tenantId,
+        Guid staffMemberId,
+        CancellationToken cancellationToken = default)
+    {
+        return await dbContext.Bookings
+            .Where(booking => booking.TenantId == tenantId &&
+                              booking.StaffMemberId == staffMemberId)
+            .OrderBy(booking => booking.StartsAtUtc)
+            .ToArrayAsync(cancellationToken);
+    }
+
+    public async Task<Booking?> GetByTenantIdAndIdAsync(
+        Guid tenantId,
+        Guid bookingId,
+        CancellationToken cancellationToken = default)
+    {
+        return await dbContext.Bookings.FirstOrDefaultAsync(
+            booking => booking.TenantId == tenantId && booking.Id == bookingId,
+            cancellationToken);
+    }
+
     public async Task<Booking?> FindByIdempotencyKeyAsync(
         Guid tenantId,
         string idempotencyKey,
