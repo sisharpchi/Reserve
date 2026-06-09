@@ -708,6 +708,33 @@ var checks = new List<(string Name, bool Passed)>
     ("reporting module registers no-show report query handler", SourceContains(
         "src/Modules/Reporting/ReserveFlow.Modules.Reporting.Infrastructure/ReportingModule.cs",
         "IQueryHandler<GetNoShowReportQuery, NoShowReportResponse?>")),
+    ("reporting module has staff utilization response dto", HasTypeNamed(typeof(DailyBookingReportResponse).Assembly, "StaffUtilizationReportResponse")),
+    ("reporting module has staff utilization query", HasTypeNamed(typeof(DailyBookingReportResponse).Assembly, "GetStaffUtilizationReportQuery")),
+    ("reporting module has staff utilization query handler", HasTypeNamed(typeof(DailyBookingReportResponse).Assembly, "GetStaffUtilizationReportQueryHandler")),
+    ("reporting module has staff utilization repository abstraction", HasTypeNamed(typeof(DailyBookingReportResponse).Assembly, "IStaffUtilizationReportRepository")),
+    ("reporting infrastructure has staff utilization repository", HasTypeNamed(typeof(ReportingDbContext).Assembly, "StaffUtilizationReportRepository")),
+    ("staff utilization repository reads tenant bookings and staff", SourceContains(
+        "src/Modules/Reporting/ReserveFlow.Modules.Reporting.Infrastructure/Reports/StaffUtilizationReportRepository.cs",
+        "bookings.bookings") &&
+        SourceContains(
+            "src/Modules/Reporting/ReserveFlow.Modules.Reporting.Infrastructure/Reports/StaffUtilizationReportRepository.cs",
+            "staffing.staff_members") &&
+        SourceContains(
+            "src/Modules/Reporting/ReserveFlow.Modules.Reporting.Infrastructure/Reports/StaffUtilizationReportRepository.cs",
+            "b.tenant_id = @tenant_id")),
+    ("reporting presentation has staff utilization report endpoint", HasEndpointNamed(ReserveFlow.Modules.Reporting.Presentation.AssemblyReference.Assembly, "GetStaffUtilizationReportEndpoint")),
+    ("staff utilization endpoint uses docs route", SourceContains(
+        "src/Modules/Reporting/ReserveFlow.Modules.Reporting.Presentation/GetStaffUtilizationReportEndpoint.cs",
+        "\"/api/admin/reports/staff-utilization\"")),
+    ("staff utilization endpoint requires tenant admin", SourceContains(
+        "src/Modules/Reporting/ReserveFlow.Modules.Reporting.Presentation/GetStaffUtilizationReportEndpoint.cs",
+        "RequireAuthorization(TenantAdminPolicy)")),
+    ("staff utilization endpoint uses tenant context", SourceContains(
+        "src/Modules/Reporting/ReserveFlow.Modules.Reporting.Presentation/GetStaffUtilizationReportEndpoint.cs",
+        "ITenantContext")),
+    ("reporting module registers staff utilization query handler", SourceContains(
+        "src/Modules/Reporting/ReserveFlow.Modules.Reporting.Infrastructure/ReportingModule.cs",
+        "IQueryHandler<GetStaffUtilizationReportQuery, StaffUtilizationReportResponse>")),
     ("daily booking report validates counts and raises domain event", DailyBookingReportValidatesCountsAndRaisesDomainEvent()),
     ("integrations module has accept webhook command", typeof(AcceptWebhookCommand).Name == nameof(AcceptWebhookCommand)),
     ("integrations module has accept webhook handler", typeof(AcceptWebhookCommandHandler).Name == nameof(AcceptWebhookCommandHandler)),
@@ -859,6 +886,16 @@ var checks = new List<(string Name, bool Passed)>
     ("staffing presentation has admin staff member detail endpoint", HasEndpointNamed(ReserveFlow.Modules.Staffing.Presentation.AssemblyReference.Assembly, "GetAdminStaffMemberEndpoint")),
     ("staffing presentation has update staff member endpoint", HasEndpointNamed(ReserveFlow.Modules.Staffing.Presentation.AssemblyReference.Assembly, "UpdateStaffMemberEndpoint")),
     ("staffing presentation has deactivate staff member endpoint", HasEndpointNamed(ReserveFlow.Modules.Staffing.Presentation.AssemblyReference.Assembly, "DeactivateStaffMemberEndpoint")),
+    ("staffing presentation has public tenant staff endpoint", HasEndpointNamed(ReserveFlow.Modules.Staffing.Presentation.AssemblyReference.Assembly, "GetTenantStaffEndpoint")),
+    ("public tenant staff endpoint uses tenant slug route", SourceContains(
+        "src/Modules/Staffing/ReserveFlow.Modules.Staffing.Presentation/GetTenantStaffEndpoint.cs",
+        "\"/api/public/tenants/{tenantSlug}/staff\"")),
+    ("public tenant staff endpoint resolves tenant slug", SourceContains(
+        "src/Modules/Staffing/ReserveFlow.Modules.Staffing.Presentation/GetTenantStaffEndpoint.cs",
+        "ITenantSlugResolver")),
+    ("public tenant staff endpoint returns not found for unknown tenant slug", SourceContains(
+        "src/Modules/Staffing/ReserveFlow.Modules.Staffing.Presentation/GetTenantStaffEndpoint.cs",
+        "TypedResults.NotFound()")),
     ("staff member update changes details and raises domain event", StaffMemberUpdateChangesDetailsAndRaisesDomainEvent()),
     ("staff member deactivate changes active flag and raises domain event", StaffMemberDeactivateChangesActiveFlagAndRaisesDomainEvent()),
     ("resource create normalizes data and raises domain event", ResourceCreateNormalizesDataAndRaisesDomainEvent()),
@@ -876,6 +913,16 @@ var checks = new List<(string Name, bool Passed)>
     ("resources presentation has admin resource detail endpoint", HasEndpointNamed(ReserveFlow.Modules.Resources.Presentation.AssemblyReference.Assembly, "GetAdminResourceEndpoint")),
     ("resources presentation has update resource endpoint", HasEndpointNamed(ReserveFlow.Modules.Resources.Presentation.AssemblyReference.Assembly, "UpdateResourceEndpoint")),
     ("resources presentation has deactivate resource endpoint", HasEndpointNamed(ReserveFlow.Modules.Resources.Presentation.AssemblyReference.Assembly, "DeactivateResourceEndpoint")),
+    ("resources presentation has public tenant resources endpoint", HasEndpointNamed(ReserveFlow.Modules.Resources.Presentation.AssemblyReference.Assembly, "GetTenantResourcesEndpoint")),
+    ("public tenant resources endpoint uses tenant slug route", SourceContains(
+        "src/Modules/Resources/ReserveFlow.Modules.Resources.Presentation/GetTenantResourcesEndpoint.cs",
+        "\"/api/public/tenants/{tenantSlug}/resources\"")),
+    ("public tenant resources endpoint resolves tenant slug", SourceContains(
+        "src/Modules/Resources/ReserveFlow.Modules.Resources.Presentation/GetTenantResourcesEndpoint.cs",
+        "ITenantSlugResolver")),
+    ("public tenant resources endpoint returns not found for unknown tenant slug", SourceContains(
+        "src/Modules/Resources/ReserveFlow.Modules.Resources.Presentation/GetTenantResourcesEndpoint.cs",
+        "TypedResults.NotFound()")),
     ("resource update changes details and raises domain event", ResourceUpdateChangesDetailsAndRaisesDomainEvent()),
     ("resource deactivate changes active flag and raises domain event", ResourceDeactivateChangesActiveFlagAndRaisesDomainEvent()),
     ("scheduling module has working hour response", HasTypeNamed(typeof(AvailableSlotResponse).Assembly, "WorkingHourResponse")),
