@@ -5,6 +5,8 @@
     <ProjectReference Include="..\ReserveFlow.Modules.Bookings.Application\ReserveFlow.Modules.Bookings.Application.csproj" />
     <ProjectReference Include="..\ReserveFlow.Modules.Bookings.Domain\ReserveFlow.Modules.Bookings.Domain.csproj" />
     <ProjectReference Include="..\ReserveFlow.Modules.Bookings.Presentation\ReserveFlow.Modules.Bookings.Presentation.csproj" />
+    <ProjectReference Include="..\..\Notifications\ReserveFlow.Modules.Notifications.Application\ReserveFlow.Modules.Notifications.Application.csproj" />
+    <ProjectReference Include="..\..\Notifications\ReserveFlow.Modules.Notifications.Domain\ReserveFlow.Modules.Notifications.Domain.csproj" />
   </ItemGroup>
 
   <ItemGroup>

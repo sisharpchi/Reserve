@@ -8,6 +8,7 @@ using ReserveFlow.Modules.Notifications.Application.Notifications;
 using ReserveFlow.Modules.Notifications.Application.Notifications.GetNotifications;
 using ReserveFlow.Modules.Notifications.Application.Notifications.QueueNotification;
 using ReserveFlow.Modules.Notifications.Infrastructure.Database;
+using ReserveFlow.Modules.Notifications.Infrastructure.Delivery;
 using ReserveFlow.Modules.Notifications.Infrastructure.Notifications;
 using ReserveFlow.Modules.Notifications.Infrastructure.Sending;
 
@@ -29,6 +30,8 @@ public static class NotificationsModule
         services.AddScoped<INotificationSender, FakeNotificationSender>();
         services.AddScoped<ICommandHandler<QueueNotificationCommand, NotificationResponse>, QueueNotificationCommandHandler>();
         services.AddScoped<IQueryHandler<GetNotificationsQuery, IReadOnlyList<NotificationResponse>>, GetNotificationsQueryHandler>();
+        services.Configure<NotificationDeliveryOptions>(configuration.GetSection("Notifications:Delivery"));
+        services.AddHostedService<NotificationDeliveryHostedService>();
         services.AddEndpoints(Presentation.AssemblyReference.Assembly);
 
         return services;

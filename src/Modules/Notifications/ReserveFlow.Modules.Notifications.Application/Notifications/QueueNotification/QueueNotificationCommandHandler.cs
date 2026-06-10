@@ -16,7 +16,8 @@ public sealed class QueueNotificationCommandHandler(
             command.Channel,
             command.Recipient,
             command.Subject,
-            command.Body);
+            command.Body,
+            command.DeliverAtUtc);
 
         notificationRepository.Insert(message);
         await unitOfWork.SaveChangesAsync(cancellationToken);

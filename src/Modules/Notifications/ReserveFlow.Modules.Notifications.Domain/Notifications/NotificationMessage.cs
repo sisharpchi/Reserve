@@ -10,7 +10,8 @@ public sealed class NotificationMessage : Entity
         NotificationChannel channel,
         string recipient,
         string subject,
-        string body)
+        string body,
+        DateTime deliverAtUtc)
         : base(id)
     {
         TenantId = tenantId;
@@ -20,6 +21,7 @@ public sealed class NotificationMessage : Entity
         Body = body;
         Status = NotificationStatus.Pending;
         CreatedAtUtc = DateTime.UtcNow;
+        DeliverAtUtc = deliverAtUtc;
     }
 
     private NotificationMessage()
@@ -40,6 +42,8 @@ public sealed class NotificationMessage : Entity
 
     public DateTime CreatedAtUtc { get; private set; }
 
+    public DateTime DeliverAtUtc { get; private set; }
+
     public DateTime? SentAtUtc { get; private set; }
 
     public string? Error { get; private set; }
@@ -49,7 +53,8 @@ public sealed class NotificationMessage : Entity
         NotificationChannel channel,
         string recipient,
         string subject,
-        string body)
+        string body,
+        DateTime? deliverAtUtc = null)
     {
         if (tenantId == Guid.Empty)
         {
@@ -59,6 +64,7 @@ public sealed class NotificationMessage : Entity
         string normalizedRecipient = NormalizeRecipient(channel, recipient);
         string normalizedSubject = NormalizeOptional(subject);
         string normalizedBody = NormalizeRequired(body, "Notification body");
+        DateTime normalizedDeliverAtUtc = NormalizeDeliverAt(deliverAtUtc);
 
         var message = new NotificationMessage(
             Guid.NewGuid(),
@@ -66,7 +72,8 @@ public sealed class NotificationMessage : Entity
             channel,
             normalizedRecipient,
             normalizedSubject,
-            normalizedBody);
+            normalizedBody,
+            normalizedDeliverAtUtc);
 
         message.RaiseDomainEvent(new NotificationQueuedDomainEvent(
             message.Id,
@@ -112,5 +119,10 @@ public sealed class NotificationMessage : Entity
         }
 
         return value.Trim();
+    }
+
+    private static DateTime NormalizeDeliverAt(DateTime? deliverAtUtc)
+    {
+        return deliverAtUtc?.ToUniversalTime() ?? DateTime.UtcNow;
     }
 }

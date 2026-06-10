@@ -72,7 +72,7 @@ public static class BookingsModule
         services.AddScoped<ICommandHandler<CompleteBookingCommand, BookingResponse?>, CompleteBookingCommandHandler>();
         services.AddScoped<ICommandHandler<MarkBookingAsNoShowCommand, BookingResponse?>, MarkBookingAsNoShowCommandHandler>();
         services.Configure<BookingsOutboxOptions>(configuration.GetSection("Bookings:Outbox"));
-        services.AddScoped<IOutboxMessageDispatcher, LoggingOutboxMessageDispatcher>();
+        services.AddScoped<IOutboxMessageDispatcher, BookingNotificationOutboxMessageDispatcher>();
         services.AddHostedService<BookingsOutboxProcessorHostedService>();
         services.AddEndpoints(Presentation.AssemblyReference.Assembly);
 

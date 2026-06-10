@@ -399,6 +399,31 @@ var checks = new List<(string Name, bool Passed)>
     ("common outbox has dispatcher", typeof(IOutboxMessageDispatcher).Name == nameof(IOutboxMessageDispatcher)),
     ("common outbox has logging dispatcher", typeof(LoggingOutboxMessageDispatcher).Name == nameof(LoggingOutboxMessageDispatcher)),
     ("bookings infrastructure has outbox processor", HasTypeNamed(typeof(BookingsDbContext).Assembly, "BookingsOutboxProcessorHostedService")),
+    ("bookings infrastructure has notification outbox dispatcher", HasTypeNamed(typeof(BookingsDbContext).Assembly, "BookingNotificationOutboxMessageDispatcher")),
+    ("booking notification dispatcher queues notification commands", SourceContains(
+        "src/Modules/Bookings/ReserveFlow.Modules.Bookings.Infrastructure/Outbox/BookingNotificationOutboxMessageDispatcher.cs",
+        "QueueNotificationCommand")),
+    ("booking notification dispatcher maps booking lifecycle events", SourceContains(
+        "src/Modules/Bookings/ReserveFlow.Modules.Bookings.Infrastructure/Outbox/BookingNotificationOutboxMessageDispatcher.cs",
+        nameof(BookingCreatedDomainEvent)) &&
+        SourceContains(
+            "src/Modules/Bookings/ReserveFlow.Modules.Bookings.Infrastructure/Outbox/BookingNotificationOutboxMessageDispatcher.cs",
+            nameof(BookingCancelledDomainEvent)) &&
+        SourceContains(
+            "src/Modules/Bookings/ReserveFlow.Modules.Bookings.Infrastructure/Outbox/BookingNotificationOutboxMessageDispatcher.cs",
+            nameof(BookingRescheduledDomainEvent)) &&
+        SourceContains(
+            "src/Modules/Bookings/ReserveFlow.Modules.Bookings.Infrastructure/Outbox/BookingNotificationOutboxMessageDispatcher.cs",
+            nameof(BookingMarkedAsNoShowDomainEvent))),
+    ("booking notification dispatcher creates tenant in-app notifications", SourceContains(
+        "src/Modules/Bookings/ReserveFlow.Modules.Bookings.Infrastructure/Outbox/BookingNotificationOutboxMessageDispatcher.cs",
+        "NotificationChannel.InApp")),
+    ("bookings infrastructure references notifications application contract", SourceContains(
+        "src/Modules/Bookings/ReserveFlow.Modules.Bookings.Infrastructure/ReserveFlow.Modules.Bookings.Infrastructure.csproj",
+        "ReserveFlow.Modules.Notifications.Application")),
+    ("bookings module registers notification outbox dispatcher", SourceContains(
+        "src/Modules/Bookings/ReserveFlow.Modules.Bookings.Infrastructure/BookingsModule.cs",
+        "BookingNotificationOutboxMessageDispatcher")),
     ("outbox message records processing outcome", OutboxMessageRecordsProcessingOutcome()),
     ("bookings module has module message response dto", HasTypeNamed(typeof(CreateBookingCommand).Assembly, "ModuleMessageResponse")),
     ("bookings module has module message repository abstraction", HasTypeNamed(typeof(CreateBookingCommand).Assembly, "IModuleMessageRepository")),
@@ -633,7 +658,13 @@ var checks = new List<(string Name, bool Passed)>
     ("bookings presentation has no-show endpoint", HasEndpointNamed(ReserveFlow.Modules.Bookings.Presentation.AssemblyReference.Assembly, "MarkBookingAsNoShowEndpoint")),
     ("notifications module has queue command", typeof(QueueNotificationCommand).Name == nameof(QueueNotificationCommand)),
     ("notifications module has queue handler", typeof(QueueNotificationCommandHandler).Name == nameof(QueueNotificationCommandHandler)),
+    ("notification queue command captures delivery time", HasPublicProperty(typeof(QueueNotificationCommand), "DeliverAtUtc")),
     ("notifications module has response dto", typeof(NotificationResponse).Name == nameof(NotificationResponse)),
+    ("notification response exposes delivery time", HasPublicProperty(typeof(NotificationResponse), "DeliverAtUtc")),
+    ("notification request captures delivery time", HasTypeWithPublicProperty(
+        ReserveFlow.Modules.Notifications.Presentation.AssemblyReference.Assembly,
+        "QueueNotificationRequest",
+        "DeliverAtUtc")),
     ("notification repository can list tenant notifications", SourceContains(
         "src/Modules/Notifications/ReserveFlow.Modules.Notifications.Application/Notifications/INotificationRepository.cs",
         "GetByTenantIdAsync")),
@@ -653,6 +684,57 @@ var checks = new List<(string Name, bool Passed)>
         "src/Modules/Notifications/ReserveFlow.Modules.Notifications.Infrastructure/NotificationsModule.cs",
         "IQueryHandler<GetNotificationsQuery, IReadOnlyList<NotificationResponse>>")),
     ("notifications module has fake sender", typeof(FakeNotificationSender).Name == nameof(FakeNotificationSender)),
+    ("notification message exposes delivery time", HasPublicProperty(typeof(NotificationMessage), "DeliverAtUtc")),
+    ("notification queue accepts delivery time", SourceContains(
+        "src/Modules/Notifications/ReserveFlow.Modules.Notifications.Domain/Notifications/NotificationMessage.cs",
+        "DateTime? deliverAtUtc")),
+    ("notification configuration maps delivery time", SourceContains(
+        "src/Modules/Notifications/ReserveFlow.Modules.Notifications.Infrastructure/Notifications/NotificationMessageConfiguration.cs",
+        "deliver_at_utc")),
+    ("notification configuration indexes due pending messages", SourceContains(
+        "src/Modules/Notifications/ReserveFlow.Modules.Notifications.Infrastructure/Notifications/NotificationMessageConfiguration.cs",
+        "ix_notification_messages_status_deliver_at")),
+    ("notifications infrastructure has delivery options", HasTypeNamed(typeof(NotificationsDbContext).Assembly, "NotificationDeliveryOptions")),
+    ("notification delivery options expose safe batch and interval", SourceContains(
+        "src/Modules/Notifications/ReserveFlow.Modules.Notifications.Infrastructure/Delivery/NotificationDeliveryOptions.cs",
+        "GetSafeBatchSize") &&
+        SourceContains(
+            "src/Modules/Notifications/ReserveFlow.Modules.Notifications.Infrastructure/Delivery/NotificationDeliveryOptions.cs",
+            "GetSafePollingInterval")),
+    ("notifications infrastructure has delivery hosted service", HasTypeNamed(typeof(NotificationsDbContext).Assembly, "NotificationDeliveryHostedService")),
+    ("notification delivery worker uses scoped dependencies", SourceContains(
+        "src/Modules/Notifications/ReserveFlow.Modules.Notifications.Infrastructure/Delivery/NotificationDeliveryHostedService.cs",
+        "IServiceScopeFactory")),
+    ("notification delivery worker reads pending messages", SourceContains(
+        "src/Modules/Notifications/ReserveFlow.Modules.Notifications.Infrastructure/Delivery/NotificationDeliveryHostedService.cs",
+        "NotificationStatus.Pending")),
+    ("notification delivery worker sends only due messages", SourceContains(
+        "src/Modules/Notifications/ReserveFlow.Modules.Notifications.Infrastructure/Delivery/NotificationDeliveryHostedService.cs",
+        "message.DeliverAtUtc <= nowUtc")),
+    ("notification delivery worker sends delivery messages", SourceContains(
+        "src/Modules/Notifications/ReserveFlow.Modules.Notifications.Infrastructure/Delivery/NotificationDeliveryHostedService.cs",
+        "INotificationSender") &&
+        SourceContains(
+            "src/Modules/Notifications/ReserveFlow.Modules.Notifications.Infrastructure/Delivery/NotificationDeliveryHostedService.cs",
+            "NotificationDeliveryMessage")),
+    ("notification delivery worker records sent and failed outcomes", SourceContains(
+        "src/Modules/Notifications/ReserveFlow.Modules.Notifications.Infrastructure/Delivery/NotificationDeliveryHostedService.cs",
+        "MarkSent") &&
+        SourceContains(
+            "src/Modules/Notifications/ReserveFlow.Modules.Notifications.Infrastructure/Delivery/NotificationDeliveryHostedService.cs",
+            "MarkFailed")),
+    ("notifications module registers delivery worker", SourceContains(
+        "src/Modules/Notifications/ReserveFlow.Modules.Notifications.Infrastructure/NotificationsModule.cs",
+        "AddHostedService<NotificationDeliveryHostedService>")),
+    ("notifications module configures delivery options", SourceContains(
+        "src/Modules/Notifications/ReserveFlow.Modules.Notifications.Infrastructure/NotificationsModule.cs",
+        "Configure<NotificationDeliveryOptions>")),
+    ("booking created outbox schedules reminder notification", SourceContains(
+        "src/Modules/Bookings/ReserveFlow.Modules.Bookings.Infrastructure/Outbox/BookingNotificationOutboxMessageDispatcher.cs",
+        "Booking reminder") &&
+        SourceContains(
+            "src/Modules/Bookings/ReserveFlow.Modules.Bookings.Infrastructure/Outbox/BookingNotificationOutboxMessageDispatcher.cs",
+            "StartsAtUtc.AddHours(-24)")),
     ("notification queue normalizes data and raises domain event", NotificationQueueNormalizesDataAndRaisesDomainEvent()),
     ("audit module has record command", typeof(RecordAuditLogCommand).Name == nameof(RecordAuditLogCommand)),
     ("audit module has record handler", typeof(RecordAuditLogCommandHandler).Name == nameof(RecordAuditLogCommandHandler)),

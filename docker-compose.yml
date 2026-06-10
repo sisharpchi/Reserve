@@ -37,6 +37,12 @@ services:
       - ./.containers/postgres:/var/lib/postgresql/data
     ports:
       - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d reserveflow"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
 
   reserveflow.identity:
     image: quay.io/keycloak/keycloak:25.0
