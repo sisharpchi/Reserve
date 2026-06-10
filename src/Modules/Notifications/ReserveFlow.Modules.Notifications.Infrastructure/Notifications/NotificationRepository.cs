@@ -21,4 +21,19 @@ internal sealed class NotificationRepository(NotificationsDbContext dbContext) :
             .OrderByDescending(message => message.CreatedAtUtc)
             .ToArrayAsync(cancellationToken);
     }
+
+    public async Task<IReadOnlyList<NotificationMessage>> GetPendingByCorrelationKeyAsync(
+        Guid tenantId,
+        string correlationKey,
+        CancellationToken cancellationToken = default)
+    {
+        return await dbContext.NotificationMessages
+            .Where(message =>
+                message.TenantId == tenantId &&
+                message.CorrelationKey == correlationKey &&
+                message.Status == NotificationStatus.Pending)
+            .OrderBy(message => message.DeliverAtUtc)
+            .ThenBy(message => message.CreatedAtUtc)
+            .ToArrayAsync(cancellationToken);
+    }
 }

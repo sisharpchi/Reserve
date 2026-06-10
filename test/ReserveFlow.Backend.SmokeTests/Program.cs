@@ -659,15 +659,26 @@ var checks = new List<(string Name, bool Passed)>
     ("notifications module has queue command", typeof(QueueNotificationCommand).Name == nameof(QueueNotificationCommand)),
     ("notifications module has queue handler", typeof(QueueNotificationCommandHandler).Name == nameof(QueueNotificationCommandHandler)),
     ("notification queue command captures delivery time", HasPublicProperty(typeof(QueueNotificationCommand), "DeliverAtUtc")),
+    ("notification queue command captures correlation key", HasPublicProperty(typeof(QueueNotificationCommand), "CorrelationKey")),
     ("notifications module has response dto", typeof(NotificationResponse).Name == nameof(NotificationResponse)),
     ("notification response exposes delivery time", HasPublicProperty(typeof(NotificationResponse), "DeliverAtUtc")),
+    ("notification response exposes correlation key", HasPublicProperty(typeof(NotificationResponse), "CorrelationKey")),
     ("notification request captures delivery time", HasTypeWithPublicProperty(
         ReserveFlow.Modules.Notifications.Presentation.AssemblyReference.Assembly,
         "QueueNotificationRequest",
         "DeliverAtUtc")),
+    ("notification request captures correlation key", HasTypeWithPublicProperty(
+        ReserveFlow.Modules.Notifications.Presentation.AssemblyReference.Assembly,
+        "QueueNotificationRequest",
+        "CorrelationKey")),
+    ("notifications module has cancel pending command", HasTypeNamed(typeof(NotificationResponse).Assembly, "CancelPendingNotificationsCommand")),
+    ("notifications module has cancel pending handler", HasTypeNamed(typeof(NotificationResponse).Assembly, "CancelPendingNotificationsCommandHandler")),
     ("notification repository can list tenant notifications", SourceContains(
         "src/Modules/Notifications/ReserveFlow.Modules.Notifications.Application/Notifications/INotificationRepository.cs",
         "GetByTenantIdAsync")),
+    ("notification repository can find pending messages by correlation key", SourceContains(
+        "src/Modules/Notifications/ReserveFlow.Modules.Notifications.Application/Notifications/INotificationRepository.cs",
+        "GetPendingByCorrelationKeyAsync")),
     ("notifications module has tenant notifications query", HasTypeNamed(typeof(NotificationResponse).Assembly, "GetNotificationsQuery")),
     ("notifications module has tenant notifications query handler", HasTypeNamed(typeof(NotificationResponse).Assembly, "GetNotificationsQueryHandler")),
     ("notifications presentation has admin notifications endpoint", HasEndpointNamed(ReserveFlow.Modules.Notifications.Presentation.AssemblyReference.Assembly, "GetNotificationsEndpoint")),
@@ -685,15 +696,43 @@ var checks = new List<(string Name, bool Passed)>
         "IQueryHandler<GetNotificationsQuery, IReadOnlyList<NotificationResponse>>")),
     ("notifications module has fake sender", typeof(FakeNotificationSender).Name == nameof(FakeNotificationSender)),
     ("notification message exposes delivery time", HasPublicProperty(typeof(NotificationMessage), "DeliverAtUtc")),
+    ("notification message exposes correlation key", HasPublicProperty(typeof(NotificationMessage), "CorrelationKey")),
+    ("notification status supports cancellation", SourceContains(
+        "src/Modules/Notifications/ReserveFlow.Modules.Notifications.Domain/Notifications/NotificationStatus.cs",
+        "Cancelled")),
+    ("notification message can cancel pending messages", SourceContains(
+        "src/Modules/Notifications/ReserveFlow.Modules.Notifications.Domain/Notifications/NotificationMessage.cs",
+        "Cancel(") &&
+        SourceContains(
+            "src/Modules/Notifications/ReserveFlow.Modules.Notifications.Domain/Notifications/NotificationMessage.cs",
+            "NotificationStatus.Cancelled")),
     ("notification queue accepts delivery time", SourceContains(
         "src/Modules/Notifications/ReserveFlow.Modules.Notifications.Domain/Notifications/NotificationMessage.cs",
         "DateTime? deliverAtUtc")),
+    ("notification queue accepts correlation key", SourceContains(
+        "src/Modules/Notifications/ReserveFlow.Modules.Notifications.Domain/Notifications/NotificationMessage.cs",
+        "string? correlationKey")),
     ("notification configuration maps delivery time", SourceContains(
         "src/Modules/Notifications/ReserveFlow.Modules.Notifications.Infrastructure/Notifications/NotificationMessageConfiguration.cs",
         "deliver_at_utc")),
+    ("notification configuration maps correlation key", SourceContains(
+        "src/Modules/Notifications/ReserveFlow.Modules.Notifications.Infrastructure/Notifications/NotificationMessageConfiguration.cs",
+        "correlation_key")),
     ("notification configuration indexes due pending messages", SourceContains(
         "src/Modules/Notifications/ReserveFlow.Modules.Notifications.Infrastructure/Notifications/NotificationMessageConfiguration.cs",
         "ix_notification_messages_status_deliver_at")),
+    ("notification configuration indexes correlation cancellation lookup", SourceContains(
+        "src/Modules/Notifications/ReserveFlow.Modules.Notifications.Infrastructure/Notifications/NotificationMessageConfiguration.cs",
+        "ix_notification_messages_tenant_correlation_status")),
+    ("notification repository filters pending messages by tenant correlation and status", SourceContains(
+        "src/Modules/Notifications/ReserveFlow.Modules.Notifications.Infrastructure/Notifications/NotificationRepository.cs",
+        "message.TenantId == tenantId") &&
+        SourceContains(
+            "src/Modules/Notifications/ReserveFlow.Modules.Notifications.Infrastructure/Notifications/NotificationRepository.cs",
+            "message.CorrelationKey == correlationKey") &&
+        SourceContains(
+            "src/Modules/Notifications/ReserveFlow.Modules.Notifications.Infrastructure/Notifications/NotificationRepository.cs",
+            "NotificationStatus.Pending")),
     ("notifications infrastructure has delivery options", HasTypeNamed(typeof(NotificationsDbContext).Assembly, "NotificationDeliveryOptions")),
     ("notification delivery options expose safe batch and interval", SourceContains(
         "src/Modules/Notifications/ReserveFlow.Modules.Notifications.Infrastructure/Delivery/NotificationDeliveryOptions.cs",
@@ -729,12 +768,27 @@ var checks = new List<(string Name, bool Passed)>
     ("notifications module configures delivery options", SourceContains(
         "src/Modules/Notifications/ReserveFlow.Modules.Notifications.Infrastructure/NotificationsModule.cs",
         "Configure<NotificationDeliveryOptions>")),
+    ("notifications module registers cancel pending handler", SourceContains(
+        "src/Modules/Notifications/ReserveFlow.Modules.Notifications.Infrastructure/NotificationsModule.cs",
+        "CancelPendingNotificationsCommandHandler")),
     ("booking created outbox schedules reminder notification", SourceContains(
         "src/Modules/Bookings/ReserveFlow.Modules.Bookings.Infrastructure/Outbox/BookingNotificationOutboxMessageDispatcher.cs",
         "Booking reminder") &&
         SourceContains(
             "src/Modules/Bookings/ReserveFlow.Modules.Bookings.Infrastructure/Outbox/BookingNotificationOutboxMessageDispatcher.cs",
             "StartsAtUtc.AddHours(-24)")),
+    ("booking reminder notification uses correlation key", SourceContains(
+        "src/Modules/Bookings/ReserveFlow.Modules.Bookings.Infrastructure/Outbox/BookingNotificationOutboxMessageDispatcher.cs",
+        "ReminderCorrelationKey")),
+    ("booking cancel and reschedule cancel stale reminders", SourceContains(
+        "src/Modules/Bookings/ReserveFlow.Modules.Bookings.Infrastructure/Outbox/BookingNotificationOutboxMessageDispatcher.cs",
+        "CancelPendingNotificationsCommand") &&
+        SourceContains(
+            "src/Modules/Bookings/ReserveFlow.Modules.Bookings.Infrastructure/Outbox/BookingNotificationOutboxMessageDispatcher.cs",
+            nameof(BookingCancelledDomainEvent)) &&
+        SourceContains(
+            "src/Modules/Bookings/ReserveFlow.Modules.Bookings.Infrastructure/Outbox/BookingNotificationOutboxMessageDispatcher.cs",
+            nameof(BookingRescheduledDomainEvent))),
     ("notification queue normalizes data and raises domain event", NotificationQueueNormalizesDataAndRaisesDomainEvent()),
     ("audit module has record command", typeof(RecordAuditLogCommand).Name == nameof(RecordAuditLogCommand)),
     ("audit module has record handler", typeof(RecordAuditLogCommandHandler).Name == nameof(RecordAuditLogCommandHandler)),

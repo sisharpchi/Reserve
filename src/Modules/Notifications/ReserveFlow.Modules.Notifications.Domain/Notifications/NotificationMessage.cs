@@ -11,7 +11,8 @@ public sealed class NotificationMessage : Entity
         string recipient,
         string subject,
         string body,
-        DateTime deliverAtUtc)
+        DateTime deliverAtUtc,
+        string? correlationKey)
         : base(id)
     {
         TenantId = tenantId;
@@ -22,6 +23,7 @@ public sealed class NotificationMessage : Entity
         Status = NotificationStatus.Pending;
         CreatedAtUtc = DateTime.UtcNow;
         DeliverAtUtc = deliverAtUtc;
+        CorrelationKey = correlationKey;
     }
 
     private NotificationMessage()
@@ -44,6 +46,8 @@ public sealed class NotificationMessage : Entity
 
     public DateTime DeliverAtUtc { get; private set; }
 
+    public string? CorrelationKey { get; private set; }
+
     public DateTime? SentAtUtc { get; private set; }
 
     public string? Error { get; private set; }
@@ -54,7 +58,8 @@ public sealed class NotificationMessage : Entity
         string recipient,
         string subject,
         string body,
-        DateTime? deliverAtUtc = null)
+        DateTime? deliverAtUtc = null,
+        string? correlationKey = null)
     {
         if (tenantId == Guid.Empty)
         {
@@ -65,6 +70,7 @@ public sealed class NotificationMessage : Entity
         string normalizedSubject = NormalizeOptional(subject);
         string normalizedBody = NormalizeRequired(body, "Notification body");
         DateTime normalizedDeliverAtUtc = NormalizeDeliverAt(deliverAtUtc);
+        string? normalizedCorrelationKey = NormalizeOptionalNullable(correlationKey);
 
         var message = new NotificationMessage(
             Guid.NewGuid(),
@@ -73,7 +79,8 @@ public sealed class NotificationMessage : Entity
             normalizedRecipient,
             normalizedSubject,
             normalizedBody,
-            normalizedDeliverAtUtc);
+            normalizedDeliverAtUtc,
+            normalizedCorrelationKey);
 
         message.RaiseDomainEvent(new NotificationQueuedDomainEvent(
             message.Id,
@@ -97,6 +104,17 @@ public sealed class NotificationMessage : Entity
         Error = NormalizeRequired(error, "Notification error");
     }
 
+    public void Cancel(string reason)
+    {
+        if (Status is not NotificationStatus.Pending)
+        {
+            return;
+        }
+
+        Status = NotificationStatus.Cancelled;
+        Error = NormalizeRequired(reason, "Notification cancellation reason");
+    }
+
     private static string NormalizeRecipient(NotificationChannel channel, string recipient)
     {
         string normalized = NormalizeRequired(recipient, "Notification recipient");
@@ -109,6 +127,11 @@ public sealed class NotificationMessage : Entity
     private static string NormalizeOptional(string value)
     {
         return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+    }
+
+    private static string? NormalizeOptionalNullable(string? value)
+    {
+        return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
     }
 
     private static string NormalizeRequired(string value, string fieldName)

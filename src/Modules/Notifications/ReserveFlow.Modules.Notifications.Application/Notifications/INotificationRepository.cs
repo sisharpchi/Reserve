@@ -9,4 +9,9 @@ public interface INotificationRepository
     Task<IReadOnlyList<NotificationMessage>> GetByTenantIdAsync(
         Guid tenantId,
         CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<NotificationMessage>> GetPendingByCorrelationKeyAsync(
+        Guid tenantId,
+        string correlationKey,
+        CancellationToken cancellationToken = default);
 }

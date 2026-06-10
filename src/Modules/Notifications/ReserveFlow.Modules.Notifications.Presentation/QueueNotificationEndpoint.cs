@@ -39,7 +39,8 @@ internal sealed class QueueNotificationEndpoint : IEndpoint
                 request.Recipient,
                 request.Subject,
                 request.Body,
-                request.DeliverAtUtc),
+                request.DeliverAtUtc,
+                request.CorrelationKey),
             cancellationToken);
 
         return TypedResults.Created($"/api/admin/notifications/{response.Id}", response);

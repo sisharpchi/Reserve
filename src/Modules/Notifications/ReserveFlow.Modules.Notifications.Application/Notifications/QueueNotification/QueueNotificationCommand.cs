@@ -9,4 +9,5 @@ public sealed record QueueNotificationCommand(
     string Recipient,
     string Subject,
     string Body,
-    DateTime? DeliverAtUtc = null) : ICommand<NotificationResponse>;
+    DateTime? DeliverAtUtc = null,
+    string? CorrelationKey = null) : ICommand<NotificationResponse>;
