@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using ReserveFlow.Common.Application.Abstractions;
 using ReserveFlow.Common.Application.Messaging;
+using ReserveFlow.Common.Application.Pagination;
 using ReserveFlow.Common.Presentation.Endpoints;
 using ReserveFlow.Modules.Notifications.Application.Notifications;
 using ReserveFlow.Modules.Notifications.Application.Notifications.GetNotifications;
@@ -23,7 +24,14 @@ internal sealed class GetNotificationsEndpoint : IEndpoint
 
     private static async Task<IResult> Handle(
         ITenantContext tenantContext,
-        IQueryHandler<GetNotificationsQuery, IReadOnlyList<NotificationResponse>> handler,
+        int? pageNumber,
+        int? pageSize,
+        string? status,
+        string? channel,
+        string? search,
+        string? sortBy,
+        string? sortDirection,
+        IQueryHandler<GetNotificationsQuery, PagedResponse<NotificationResponse>> handler,
         CancellationToken cancellationToken)
     {
         if (tenantContext.TenantId is not Guid tenantId)
@@ -31,8 +39,16 @@ internal sealed class GetNotificationsEndpoint : IEndpoint
             return TypedResults.BadRequest("Tenant context is required.");
         }
 
-        IReadOnlyList<NotificationResponse> response = await handler.Handle(
-            new GetNotificationsQuery(tenantId),
+        PagedResponse<NotificationResponse> response = await handler.Handle(
+            new GetNotificationsQuery(
+                tenantId,
+                pageNumber,
+                pageSize,
+                status,
+                channel,
+                search,
+                sortBy,
+                sortDirection),
             cancellationToken);
 
         return TypedResults.Ok(response);

@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using ReserveFlow.Common.Application.Messaging;
+using ReserveFlow.Common.Application.Pagination;
 using ReserveFlow.Common.Presentation.Endpoints;
 using ReserveFlow.Modules.Audit.Application.AuditLogs;
 using ReserveFlow.Modules.Audit.Application.AuditLogs.GetPlatformAuditLogs;
@@ -25,7 +26,7 @@ public static class AuditModule
 
         services.AddScoped<IAuditLogRepository, AuditLogRepository>();
         services.AddScoped<IAuditUnitOfWork>(serviceProvider => serviceProvider.GetRequiredService<AuditDbContext>());
-        services.AddScoped<IQueryHandler<GetPlatformAuditLogsQuery, IReadOnlyList<AuditLogResponse>>, GetPlatformAuditLogsQueryHandler>();
+        services.AddScoped<IQueryHandler<GetPlatformAuditLogsQuery, PagedResponse<AuditLogResponse>>, GetPlatformAuditLogsQueryHandler>();
         services.AddScoped<ICommandHandler<RecordAuditLogCommand, AuditLogResponse>, RecordAuditLogCommandHandler>();
         services.AddEndpoints(Presentation.AssemblyReference.Assembly);
 

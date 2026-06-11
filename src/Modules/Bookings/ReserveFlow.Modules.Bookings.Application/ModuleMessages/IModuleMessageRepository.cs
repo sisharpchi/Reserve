@@ -1,9 +1,15 @@
+using ReserveFlow.Common.Application.Pagination;
+
 namespace ReserveFlow.Modules.Bookings.Application.ModuleMessages;
 
 public interface IModuleMessageRepository
 {
-    Task<IReadOnlyList<ModuleMessageResponse>> GetByTenantIdAsync(
+    Task<PagedResult<ModuleMessageResponse>> GetByTenantIdAsync(
         Guid tenantId,
-        int take,
+        PageRequest pageRequest,
+        string? status,
+        string? type,
+        string? sortBy,
+        string? sortDirection,
         CancellationToken cancellationToken = default);
 }

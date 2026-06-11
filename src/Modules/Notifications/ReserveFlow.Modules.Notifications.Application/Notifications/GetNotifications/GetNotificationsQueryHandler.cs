@@ -1,21 +1,35 @@
 using ReserveFlow.Common.Application.Messaging;
+using ReserveFlow.Common.Application.Pagination;
 using ReserveFlow.Modules.Notifications.Domain.Notifications;
 
 namespace ReserveFlow.Modules.Notifications.Application.Notifications.GetNotifications;
 
 public sealed class GetNotificationsQueryHandler(INotificationRepository notificationRepository)
-    : IQueryHandler<GetNotificationsQuery, IReadOnlyList<NotificationResponse>>
+    : IQueryHandler<GetNotificationsQuery, PagedResponse<NotificationResponse>>
 {
-    public async Task<IReadOnlyList<NotificationResponse>> Handle(
+    public async Task<PagedResponse<NotificationResponse>> Handle(
         GetNotificationsQuery query,
         CancellationToken cancellationToken = default)
     {
-        IReadOnlyList<NotificationMessage> messages = await notificationRepository.GetByTenantIdAsync(
+        PageRequest pageRequest = PageRequest.Create(query.PageNumber, query.PageSize);
+        PagedResult<NotificationMessage> messages = await notificationRepository.GetByTenantIdAsync(
             query.TenantId,
+            pageRequest,
+            query.Status,
+            query.Channel,
+            query.Search,
+            query.SortBy,
+            query.SortDirection,
             cancellationToken);
 
-        return messages
+        NotificationResponse[] items = messages.Items
             .Select(NotificationResponse.FromMessage)
             .ToArray();
+
+        return new PagedResponse<NotificationResponse>(
+            items,
+            pageRequest.PageNumber,
+            pageRequest.PageSize,
+            messages.TotalCount);
     }
 }

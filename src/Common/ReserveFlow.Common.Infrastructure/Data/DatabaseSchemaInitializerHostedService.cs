@@ -65,48 +65,6 @@ internal sealed class DatabaseSchemaInitializerHostedService(
         command.CommandText =
             $"""
             create schema if not exists {quotedSchema};
-
-            create table if not exists {quotedSchema}.outbox_messages (
-                id uuid primary key,
-                tenant_id uuid null,
-                type varchar(500) not null,
-                payload jsonb not null,
-                occurred_on_utc timestamptz not null,
-                processed_on_utc timestamptz null,
-                error text null,
-                retry_count int not null default 0
-            );
-
-            alter table {quotedSchema}.outbox_messages
-                add column if not exists tenant_id uuid null;
-
-            alter table {quotedSchema}.outbox_messages
-                add column if not exists payload jsonb null;
-
-            alter table {quotedSchema}.outbox_messages
-                add column if not exists retry_count int not null default 0;
-
-            create table if not exists {quotedSchema}.outbox_message_consumers (
-                id uuid primary key,
-                name varchar(500) not null
-            );
-
-            create table if not exists {quotedSchema}.inbox_messages (
-                id uuid primary key,
-                type varchar(500) not null,
-                payload jsonb not null,
-                occurred_on_utc timestamptz not null,
-                processed_on_utc timestamptz null,
-                error text null
-            );
-
-            alter table {quotedSchema}.inbox_messages
-                add column if not exists payload jsonb null;
-
-            create table if not exists {quotedSchema}.inbox_message_consumers (
-                id uuid primary key,
-                name varchar(500) not null
-            );
             """;
 
         await command.ExecuteNonQueryAsync(cancellationToken);

@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using ReserveFlow.Api.DemoData;
 using ReserveFlow.Api.Extensions;
 using ReserveFlow.Common.Infrastructure;
 using ReserveFlow.Common.Infrastructure.Observability;
@@ -32,6 +33,7 @@ builder.Configuration.AddModuleConfiguration(["identity", "tenants", "catalog", 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddReserveFlowInfrastructure(builder.Configuration);
+builder.Services.AddDemoDataSeeder();
 
 builder.Services.AddIdentityModule(builder.Configuration);
 builder.Services.AddTenantsModule(builder.Configuration);

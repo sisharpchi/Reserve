@@ -1,3 +1,4 @@
+using System.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -14,8 +15,16 @@ internal sealed class NotificationDeliveryHostedService(
     IOptionsMonitor<NotificationDeliveryOptions> optionsMonitor,
     ILogger<NotificationDeliveryHostedService> logger) : BackgroundService
 {
+    private bool _missingNotificationTableLogged;
+
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        if (!optionsMonitor.CurrentValue.Enabled)
+        {
+            LogNotificationDeliveryDisabled(logger, null);
+            return;
+        }
+
         await TryProcessBatchAsync(stoppingToken);
 
         using var timer = new PeriodicTimer(optionsMonitor.CurrentValue.GetSafePollingInterval());
@@ -50,6 +59,19 @@ internal sealed class NotificationDeliveryHostedService(
         int batchSize = optionsMonitor.CurrentValue.GetSafeBatchSize();
         DateTime nowUtc = DateTime.UtcNow;
 
+        if (!await NotificationTableExistsAsync(dbContext, cancellationToken))
+        {
+            if (!_missingNotificationTableLogged)
+            {
+                LogNotificationTableMissing(logger, null);
+                _missingNotificationTableLogged = true;
+            }
+
+            return;
+        }
+
+        _missingNotificationTableLogged = false;
+
         NotificationMessage[] messages = await dbContext.NotificationMessages
             .Where(message => message.Status == NotificationStatus.Pending && message.DeliverAtUtc <= nowUtc)
             .OrderBy(message => message.DeliverAtUtc)
@@ -65,6 +87,36 @@ internal sealed class NotificationDeliveryHostedService(
         if (messages.Length > 0)
         {
             await dbContext.SaveChangesAsync(cancellationToken);
+        }
+    }
+
+    private static async Task<bool> NotificationTableExistsAsync(
+        NotificationsDbContext dbContext,
+        CancellationToken cancellationToken)
+    {
+        var connection = dbContext.Database.GetDbConnection();
+        bool shouldCloseConnection = connection.State is not ConnectionState.Open;
+
+        if (shouldCloseConnection)
+        {
+            await connection.OpenAsync(cancellationToken);
+        }
+
+        try
+        {
+            await using var command = connection.CreateCommand();
+            command.CommandText = "select to_regclass('notifications.notification_messages') is not null";
+
+            object? result = await command.ExecuteScalarAsync(cancellationToken);
+
+            return result is true;
+        }
+        finally
+        {
+            if (shouldCloseConnection)
+            {
+                await connection.CloseAsync();
+            }
         }
     }
 
@@ -101,4 +153,16 @@ internal sealed class NotificationDeliveryHostedService(
             LogLevel.Warning,
             new EventId(1, nameof(LogNotificationBatchFailed)),
             "Notification delivery batch processing failed. The worker will retry on the next polling interval.");
+
+    private static readonly Action<ILogger, Exception?> LogNotificationTableMissing =
+        LoggerMessage.Define(
+            LogLevel.Information,
+            new EventId(2, nameof(LogNotificationTableMissing)),
+            "Notification delivery worker is waiting for the notifications.notification_messages table to be created.");
+
+    private static readonly Action<ILogger, Exception?> LogNotificationDeliveryDisabled =
+        LoggerMessage.Define(
+            LogLevel.Information,
+            new EventId(3, nameof(LogNotificationDeliveryDisabled)),
+            "Notification delivery worker is disabled.");
 }

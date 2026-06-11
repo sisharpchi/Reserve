@@ -15,6 +15,12 @@ internal sealed class BookingsOutboxProcessorHostedService(
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        if (!optionsMonitor.CurrentValue.Enabled)
+        {
+            LogOutboxProcessorDisabled(logger, null);
+            return;
+        }
+
         await TryProcessBatchAsync(stoppingToken);
 
         using var timer = new PeriodicTimer(optionsMonitor.CurrentValue.GetSafePollingInterval());
@@ -90,4 +96,10 @@ internal sealed class BookingsOutboxProcessorHostedService(
             LogLevel.Warning,
             new EventId(1, nameof(LogOutboxBatchFailed)),
             "Bookings outbox batch processing failed. The worker will retry on the next polling interval.");
+
+    private static readonly Action<ILogger, Exception?> LogOutboxProcessorDisabled =
+        LoggerMessage.Define(
+            LogLevel.Information,
+            new EventId(2, nameof(LogOutboxProcessorDisabled)),
+            "Bookings outbox processor is disabled.");
 }

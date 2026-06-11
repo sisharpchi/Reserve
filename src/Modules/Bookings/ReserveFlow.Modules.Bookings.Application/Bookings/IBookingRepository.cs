@@ -1,3 +1,4 @@
+using ReserveFlow.Common.Application.Pagination;
 using ReserveFlow.Modules.Bookings.Domain.Bookings;
 
 namespace ReserveFlow.Modules.Bookings.Application.Bookings;
@@ -12,6 +13,16 @@ public interface IBookingRepository
 
     Task<IReadOnlyList<Booking>> GetByTenantIdAsync(
         Guid tenantId,
+        CancellationToken cancellationToken = default);
+
+    Task<PagedResult<Booking>> GetByTenantIdAsync(
+        Guid tenantId,
+        PageRequest pageRequest,
+        string? status,
+        DateTimeOffset? fromUtc,
+        DateTimeOffset? toUtc,
+        string? sortBy,
+        string? sortDirection,
         CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<Booking>> GetByTenantIdAndStaffMemberIdAsync(

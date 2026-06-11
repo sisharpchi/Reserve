@@ -33,5 +33,17 @@ jobs:
       - name: Smoke tests
         run: dotnet run --project test/ReserveFlow.Backend.SmokeTests/ReserveFlow.Backend.SmokeTests.csproj --no-build
 
+      - name: Unit tests
+        run: dotnet test test/ReserveFlow.UnitTests/ReserveFlow.UnitTests.csproj --no-build --logger "trx;LogFileName=unit-tests.trx"
+
+      - name: Architecture tests
+        run: dotnet test test/ReserveFlow.ArchitectureTests/ReserveFlow.ArchitectureTests.csproj --no-build --logger "trx;LogFileName=architecture-tests.trx"
+
+      - name: API tests
+        run: dotnet test test/ReserveFlow.ApiTests/ReserveFlow.ApiTests.csproj --no-build --logger "trx;LogFileName=api-tests.trx"
+
+      - name: Integration tests
+        run: dotnet test test/ReserveFlow.IntegrationTests/ReserveFlow.IntegrationTests.csproj --no-build --logger "trx;LogFileName=integration-tests.trx"
+
       - name: Validate Docker Compose
         run: docker compose config --quiet

@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using ReserveFlow.Common.Application.Abstractions;
 using ReserveFlow.Common.Application.Messaging;
+using ReserveFlow.Common.Application.Pagination;
 using ReserveFlow.Common.Presentation.Endpoints;
 using ReserveFlow.Modules.Bookings.Application.ModuleMessages;
 using ReserveFlow.Modules.Bookings.Application.ModuleMessages.GetModuleMessages;
@@ -22,9 +23,14 @@ internal sealed class GetModuleMessagesEndpoint : IEndpoint
     }
 
     private static async Task<IResult> Handle(
-        int? take,
+        int? pageNumber,
+        int? pageSize,
+        string? status,
+        string? type,
+        string? sortBy,
+        string? sortDirection,
         ITenantContext tenantContext,
-        IQueryHandler<GetModuleMessagesQuery, IReadOnlyList<ModuleMessageResponse>> handler,
+        IQueryHandler<GetModuleMessagesQuery, PagedResponse<ModuleMessageResponse>> handler,
         CancellationToken cancellationToken)
     {
         if (tenantContext.TenantId is not Guid tenantId)
@@ -32,8 +38,8 @@ internal sealed class GetModuleMessagesEndpoint : IEndpoint
             return TypedResults.BadRequest("Tenant context is required.");
         }
 
-        IReadOnlyList<ModuleMessageResponse> response = await handler.Handle(
-            new GetModuleMessagesQuery(tenantId, take ?? 100),
+        PagedResponse<ModuleMessageResponse> response = await handler.Handle(
+            new GetModuleMessagesQuery(tenantId, pageNumber, pageSize, status, type, sortBy, sortDirection),
             cancellationToken);
 
         return TypedResults.Ok(response);

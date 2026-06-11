@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using ReserveFlow.Common.Application.Messaging;
+using ReserveFlow.Common.Application.Pagination;
 using ReserveFlow.Common.Presentation.Endpoints;
 using ReserveFlow.Modules.Notifications.Application.Notifications;
 using ReserveFlow.Modules.Notifications.Application.Notifications.CancelPendingNotifications;
@@ -31,7 +32,7 @@ public static class NotificationsModule
         services.AddScoped<INotificationSender, FakeNotificationSender>();
         services.AddScoped<ICommandHandler<QueueNotificationCommand, NotificationResponse>, QueueNotificationCommandHandler>();
         services.AddScoped<ICommandHandler<CancelPendingNotificationsCommand, int>, CancelPendingNotificationsCommandHandler>();
-        services.AddScoped<IQueryHandler<GetNotificationsQuery, IReadOnlyList<NotificationResponse>>, GetNotificationsQueryHandler>();
+        services.AddScoped<IQueryHandler<GetNotificationsQuery, PagedResponse<NotificationResponse>>, GetNotificationsQueryHandler>();
         services.Configure<NotificationDeliveryOptions>(configuration.GetSection("Notifications:Delivery"));
         services.AddHostedService<NotificationDeliveryHostedService>();
         services.AddEndpoints(Presentation.AssemblyReference.Assembly);

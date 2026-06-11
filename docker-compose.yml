@@ -18,6 +18,11 @@ services:
       Identity__MetadataAddress: http://reserveflow.identity:8080/realms/reserveflow/.well-known/openid-configuration
       Identity__Audience: reserveflow-api
       Keycloak__HealthUrl: http://reserveflow.identity:8080/health/ready
+      Keycloak__Admin__BaseUrl: http://reserveflow.identity:8080
+      Keycloak__Admin__Realm: reserveflow
+      Keycloak__Admin__ClientId: reserveflow-admin
+      Keycloak__Admin__ClientSecret: reserveflow-admin-secret
+      Keycloak__Admin__TenantAdminRealmRole: tenant-admin
     ports:
       - "5080:8080"
     depends_on:

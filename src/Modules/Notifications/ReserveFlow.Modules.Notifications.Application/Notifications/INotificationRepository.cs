@@ -1,3 +1,4 @@
+using ReserveFlow.Common.Application.Pagination;
 using ReserveFlow.Modules.Notifications.Domain.Notifications;
 
 namespace ReserveFlow.Modules.Notifications.Application.Notifications;
@@ -8,6 +9,16 @@ public interface INotificationRepository
 
     Task<IReadOnlyList<NotificationMessage>> GetByTenantIdAsync(
         Guid tenantId,
+        CancellationToken cancellationToken = default);
+
+    Task<PagedResult<NotificationMessage>> GetByTenantIdAsync(
+        Guid tenantId,
+        PageRequest pageRequest,
+        string? status,
+        string? channel,
+        string? search,
+        string? sortBy,
+        string? sortDirection,
         CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<NotificationMessage>> GetPendingByCorrelationKeyAsync(

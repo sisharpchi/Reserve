@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Routing;
 using ReserveFlow.Common.Application.Messaging;
+using ReserveFlow.Common.Application.Pagination;
 using ReserveFlow.Common.Presentation.Endpoints;
 using ReserveFlow.Modules.Audit.Application.AuditLogs;
 using ReserveFlow.Modules.Audit.Application.AuditLogs.GetPlatformAuditLogs;
@@ -21,13 +22,30 @@ internal sealed class GetPlatformAuditLogsEndpoint : IEndpoint
             .WithName("GetPlatformAuditLogs");
     }
 
-    private static async Task<Ok<IReadOnlyList<AuditLogResponse>>> Handle(
-        int? limit,
-        IQueryHandler<GetPlatformAuditLogsQuery, IReadOnlyList<AuditLogResponse>> handler,
+    private static async Task<Ok<PagedResponse<AuditLogResponse>>> Handle(
+        int? pageNumber,
+        int? pageSize,
+        Guid? tenantId,
+        string? action,
+        string? entityName,
+        DateTime? fromUtc,
+        DateTime? toUtc,
+        string? sortBy,
+        string? sortDirection,
+        IQueryHandler<GetPlatformAuditLogsQuery, PagedResponse<AuditLogResponse>> handler,
         CancellationToken cancellationToken)
     {
-        IReadOnlyList<AuditLogResponse> response = await handler.Handle(
-            new GetPlatformAuditLogsQuery(limit ?? 100),
+        PagedResponse<AuditLogResponse> response = await handler.Handle(
+            new GetPlatformAuditLogsQuery(
+                pageNumber,
+                pageSize,
+                tenantId,
+                action,
+                entityName,
+                fromUtc,
+                toUtc,
+                sortBy,
+                sortDirection),
             cancellationToken);
 
         return TypedResults.Ok(response);

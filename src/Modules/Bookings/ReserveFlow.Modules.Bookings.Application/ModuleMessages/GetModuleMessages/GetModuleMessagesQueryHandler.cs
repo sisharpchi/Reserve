@@ -1,16 +1,29 @@
 using ReserveFlow.Common.Application.Messaging;
+using ReserveFlow.Common.Application.Pagination;
 
 namespace ReserveFlow.Modules.Bookings.Application.ModuleMessages.GetModuleMessages;
 
 public sealed class GetModuleMessagesQueryHandler(IModuleMessageRepository moduleMessageRepository)
-    : IQueryHandler<GetModuleMessagesQuery, IReadOnlyList<ModuleMessageResponse>>
+    : IQueryHandler<GetModuleMessagesQuery, PagedResponse<ModuleMessageResponse>>
 {
-    public Task<IReadOnlyList<ModuleMessageResponse>> Handle(
+    public async Task<PagedResponse<ModuleMessageResponse>> Handle(
         GetModuleMessagesQuery query,
         CancellationToken cancellationToken = default)
     {
-        int take = Math.Clamp(query.Take, 1, 200);
+        PageRequest pageRequest = PageRequest.Create(query.PageNumber, query.PageSize);
+        PagedResult<ModuleMessageResponse> messages = await moduleMessageRepository.GetByTenantIdAsync(
+            query.TenantId,
+            pageRequest,
+            query.Status,
+            query.Type,
+            query.SortBy,
+            query.SortDirection,
+            cancellationToken);
 
-        return moduleMessageRepository.GetByTenantIdAsync(query.TenantId, take, cancellationToken);
+        return new PagedResponse<ModuleMessageResponse>(
+            messages.Items,
+            pageRequest.PageNumber,
+            pageRequest.PageSize,
+            messages.TotalCount);
     }
 }

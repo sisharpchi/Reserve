@@ -1,18 +1,34 @@
 using ReserveFlow.Common.Application.Messaging;
+using ReserveFlow.Common.Application.Pagination;
+using ReserveFlow.Modules.Catalog.Domain.Services;
 
 namespace ReserveFlow.Modules.Catalog.Application.Services.GetServices;
 
 public sealed class GetServicesQueryHandler(IServiceRepository serviceRepository)
-    : IQueryHandler<GetServicesQuery, IReadOnlyList<ServiceResponse>>
+    : IQueryHandler<GetServicesQuery, PagedResponse<ServiceResponse>>
 {
-    public async Task<IReadOnlyList<ServiceResponse>> Handle(
+    public async Task<PagedResponse<ServiceResponse>> Handle(
         GetServicesQuery query,
         CancellationToken cancellationToken = default)
     {
-        var services = await serviceRepository.GetByTenantIdAsync(query.TenantId, cancellationToken);
+        PageRequest pageRequest = PageRequest.Create(query.PageNumber, query.PageSize);
+        PagedResult<Service> services = await serviceRepository.GetByTenantIdAsync(
+            query.TenantId,
+            pageRequest,
+            query.Search,
+            query.IsActive,
+            query.SortBy,
+            query.SortDirection,
+            cancellationToken);
 
-        return services
+        ServiceResponse[] items = services.Items
             .Select(ServiceResponse.FromService)
             .ToArray();
+
+        return new PagedResponse<ServiceResponse>(
+            items,
+            pageRequest.PageNumber,
+            pageRequest.PageSize,
+            services.TotalCount);
     }
 }

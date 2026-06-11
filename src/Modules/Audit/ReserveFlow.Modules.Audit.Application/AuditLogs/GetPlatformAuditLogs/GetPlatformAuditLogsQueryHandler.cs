@@ -1,20 +1,36 @@
 using ReserveFlow.Common.Application.Messaging;
+using ReserveFlow.Common.Application.Pagination;
 using ReserveFlow.Modules.Audit.Domain.AuditLogs;
 
 namespace ReserveFlow.Modules.Audit.Application.AuditLogs.GetPlatformAuditLogs;
 
 public sealed class GetPlatformAuditLogsQueryHandler(IAuditLogRepository auditLogRepository)
-    : IQueryHandler<GetPlatformAuditLogsQuery, IReadOnlyList<AuditLogResponse>>
+    : IQueryHandler<GetPlatformAuditLogsQuery, PagedResponse<AuditLogResponse>>
 {
-    public async Task<IReadOnlyList<AuditLogResponse>> Handle(
+    public async Task<PagedResponse<AuditLogResponse>> Handle(
         GetPlatformAuditLogsQuery query,
         CancellationToken cancellationToken = default)
     {
-        int limit = Math.Clamp(query.Limit, 1, 200);
-        IReadOnlyList<AuditLog> logs = await auditLogRepository.GetRecentAsync(limit, cancellationToken);
+        PageRequest pageRequest = PageRequest.Create(query.PageNumber, query.PageSize);
+        PagedResult<AuditLog> logs = await auditLogRepository.GetRecentAsync(
+            pageRequest,
+            query.TenantId,
+            query.Action,
+            query.EntityName,
+            query.FromUtc,
+            query.ToUtc,
+            query.SortBy,
+            query.SortDirection,
+            cancellationToken);
 
-        return logs
+        AuditLogResponse[] items = logs.Items
             .Select(AuditLogResponse.FromAuditLog)
             .ToArray();
+
+        return new PagedResponse<AuditLogResponse>(
+            items,
+            pageRequest.PageNumber,
+            pageRequest.PageSize,
+            logs.TotalCount);
     }
 }
