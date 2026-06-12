@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Routing;
 using ReserveFlow.Common.Application.Messaging;
+using ReserveFlow.Common.Application.Pagination;
 using ReserveFlow.Common.Presentation.Endpoints;
 using ReserveFlow.Modules.Tenants.Application.Tenants;
 using ReserveFlow.Modules.Tenants.Application.Tenants.GetPlatformTenants;
@@ -21,12 +22,19 @@ internal sealed class GetPlatformTenantsEndpoint : IEndpoint
             .WithName("GetPlatformTenants");
     }
 
-    private static async Task<Ok<IReadOnlyList<TenantResponse>>> Handle(
-        IQueryHandler<GetPlatformTenantsQuery, IReadOnlyList<TenantResponse>> handler,
+    private static async Task<Ok<PagedResponse<TenantResponse>>> Handle(
+        int? pageNumber,
+        int? pageSize,
+        Guid? categoryId,
+        string? search,
+        string? status,
+        string? sortBy,
+        string? sortDirection,
+        IQueryHandler<GetPlatformTenantsQuery, PagedResponse<TenantResponse>> handler,
         CancellationToken cancellationToken)
     {
-        IReadOnlyList<TenantResponse> response = await handler.Handle(
-            new GetPlatformTenantsQuery(),
+        PagedResponse<TenantResponse> response = await handler.Handle(
+            new GetPlatformTenantsQuery(pageNumber, pageSize, categoryId, search, status, sortBy, sortDirection),
             cancellationToken);
 
         return TypedResults.Ok(response);

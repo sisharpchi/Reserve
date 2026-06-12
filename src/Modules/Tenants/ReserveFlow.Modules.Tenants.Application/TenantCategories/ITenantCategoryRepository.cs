@@ -1,3 +1,4 @@
+using ReserveFlow.Common.Application.Pagination;
 using ReserveFlow.Modules.Tenants.Domain.TenantCategories;
 
 namespace ReserveFlow.Modules.Tenants.Application.TenantCategories;
@@ -9,6 +10,14 @@ public interface ITenantCategoryRepository
     Task<TenantCategory?> GetByIdAsync(Guid categoryId, CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<TenantCategory>> GetAllAsync(CancellationToken cancellationToken = default);
+
+    Task<PagedResult<TenantCategory>> GetAllAsync(
+        PageRequest pageRequest,
+        string? search,
+        bool? isActive,
+        string? sortBy,
+        string? sortDirection,
+        CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<TenantCategory>> GetActiveAsync(CancellationToken cancellationToken = default);
 

@@ -92,11 +92,11 @@ Admin-only provisioning endpoints call Keycloak Admin REST API from backend code
 ## Platform Admin APIs
 
 ```http
-GET    /api/platform/categories
+GET    /api/platform/categories?pageNumber=1&pageSize=20&search=clinic&isActive=true&sortBy=sortOrder&sortDirection=asc
 POST   /api/platform/categories
 PUT    /api/platform/categories/{id}
 
-GET    /api/platform/tenants
+GET    /api/platform/tenants?pageNumber=1&pageSize=20&categoryId={categoryId}&search=smile&status=Active&sortBy=name&sortDirection=asc
 POST   /api/platform/tenants
 GET    /api/platform/tenants/{id}
 PUT    /api/platform/tenants/{id}
@@ -153,8 +153,10 @@ Required permissions:
 - `Platform.Audit.View`
 - `Platform.Usage.View`
 
-Platform audit logs return the same paged response shape as admin tables. Filters are optional:
+Platform category, tenant, and audit log list endpoints return the same paged response shape as admin tables. `pageSize` is capped by the backend at `100`. Filters are optional:
 
+- Categories: `search`, `isActive`, `sortBy=sortOrder|name|slug|createdAtUtc`, `sortDirection=asc|desc`.
+- Tenants: `categoryId`, `search`, `status=Pending|Active|Suspended|Deleted`, `sortBy=name|slug|status|categoryId|createdAtUtc`, `sortDirection=asc|desc`.
 - Audit logs: `tenantId`, `action`, `entityName`, `fromUtc`, `toUtc`, `sortBy=occurredOnUtc|tenantId|action|entityName`, `sortDirection=asc|desc`.
 
 ## Tenant Admin APIs

@@ -319,8 +319,74 @@ var checks = new List<(string Name, bool Passed)>
             "src/Modules/Audit/ReserveFlow.Modules.Audit.Infrastructure/AuditLogs/AuditLogRepository.cs",
             "ApplyTenantFilter") &&
         SourceContains(
-            "src/Modules/Audit/ReserveFlow.Modules.Audit.Infrastructure/AuditLogs/AuditLogRepository.cs",
-            "ApplyDateRangeFilter")),
+        "src/Modules/Audit/ReserveFlow.Modules.Audit.Infrastructure/AuditLogs/AuditLogRepository.cs",
+        "ApplyDateRangeFilter")),
+    ("platform tenant list endpoint supports pagination and filters", SourceContains(
+        "src/Modules/Tenants/ReserveFlow.Modules.Tenants.Presentation/GetPlatformTenantsEndpoint.cs",
+        "PagedResponse<TenantResponse>") &&
+        SourceContains(
+            "src/Modules/Tenants/ReserveFlow.Modules.Tenants.Presentation/GetPlatformTenantsEndpoint.cs",
+            "int? pageNumber") &&
+        SourceContains(
+            "src/Modules/Tenants/ReserveFlow.Modules.Tenants.Presentation/GetPlatformTenantsEndpoint.cs",
+            "int? pageSize") &&
+        SourceContains(
+            "src/Modules/Tenants/ReserveFlow.Modules.Tenants.Presentation/GetPlatformTenantsEndpoint.cs",
+            "Guid? categoryId") &&
+        SourceContains(
+            "src/Modules/Tenants/ReserveFlow.Modules.Tenants.Presentation/GetPlatformTenantsEndpoint.cs",
+            "string? search") &&
+        SourceContains(
+            "src/Modules/Tenants/ReserveFlow.Modules.Tenants.Presentation/GetPlatformTenantsEndpoint.cs",
+            "string? status") &&
+        SourceContains(
+            "src/Modules/Tenants/ReserveFlow.Modules.Tenants.Presentation/GetPlatformTenantsEndpoint.cs",
+            "string? sortBy") &&
+        SourceContains(
+            "src/Modules/Tenants/ReserveFlow.Modules.Tenants.Presentation/GetPlatformTenantsEndpoint.cs",
+            "string? sortDirection")),
+    ("platform category list endpoint supports pagination and filters", SourceContains(
+        "src/Modules/Tenants/ReserveFlow.Modules.Tenants.Presentation/GetPlatformCategoriesEndpoint.cs",
+        "PagedResponse<TenantCategoryResponse>") &&
+        SourceContains(
+            "src/Modules/Tenants/ReserveFlow.Modules.Tenants.Presentation/GetPlatformCategoriesEndpoint.cs",
+            "int? pageNumber") &&
+        SourceContains(
+            "src/Modules/Tenants/ReserveFlow.Modules.Tenants.Presentation/GetPlatformCategoriesEndpoint.cs",
+            "int? pageSize") &&
+        SourceContains(
+            "src/Modules/Tenants/ReserveFlow.Modules.Tenants.Presentation/GetPlatformCategoriesEndpoint.cs",
+            "string? search") &&
+        SourceContains(
+            "src/Modules/Tenants/ReserveFlow.Modules.Tenants.Presentation/GetPlatformCategoriesEndpoint.cs",
+            "bool? isActive") &&
+        SourceContains(
+            "src/Modules/Tenants/ReserveFlow.Modules.Tenants.Presentation/GetPlatformCategoriesEndpoint.cs",
+            "string? sortBy") &&
+        SourceContains(
+            "src/Modules/Tenants/ReserveFlow.Modules.Tenants.Presentation/GetPlatformCategoriesEndpoint.cs",
+            "string? sortDirection")),
+    ("platform tenant repositories apply filters and sorting", SourceContains(
+        "src/Modules/Tenants/ReserveFlow.Modules.Tenants.Infrastructure/Tenants/TenantRepository.cs",
+        "ApplyPlatformSearch") &&
+        SourceContains(
+            "src/Modules/Tenants/ReserveFlow.Modules.Tenants.Infrastructure/Tenants/TenantRepository.cs",
+            "ApplyStatusFilter") &&
+        SourceContains(
+            "src/Modules/Tenants/ReserveFlow.Modules.Tenants.Infrastructure/Tenants/TenantRepository.cs",
+            "ApplyCategoryFilter") &&
+        SourceContains(
+            "src/Modules/Tenants/ReserveFlow.Modules.Tenants.Infrastructure/Tenants/TenantRepository.cs",
+            "ApplyPlatformSorting") &&
+        SourceContains(
+            "src/Modules/Tenants/ReserveFlow.Modules.Tenants.Infrastructure/TenantCategories/TenantCategoryRepository.cs",
+            "ApplySearch") &&
+        SourceContains(
+            "src/Modules/Tenants/ReserveFlow.Modules.Tenants.Infrastructure/TenantCategories/TenantCategoryRepository.cs",
+            "ApplyActiveFilter") &&
+        SourceContains(
+            "src/Modules/Tenants/ReserveFlow.Modules.Tenants.Infrastructure/TenantCategories/TenantCategoryRepository.cs",
+            "ApplySorting")),
     ("backend ci workflow exists", SourceContains(
         ".github/workflows/backend-ci.yml",
         "name: Backend CI")),
@@ -2047,9 +2113,9 @@ var checks = new List<(string Name, bool Passed)>
     ("tenants module has activate tenant handler", HasTypeNamed(typeof(TenantResponse).Assembly, "ActivateTenantCommandHandler")),
     ("tenants module has suspend tenant command", HasTypeNamed(typeof(TenantResponse).Assembly, "SuspendTenantCommand")),
     ("tenants module has suspend tenant handler", HasTypeNamed(typeof(TenantResponse).Assembly, "SuspendTenantCommandHandler")),
-    ("tenant category repository can list platform categories", typeof(ITenantCategoryRepository).GetMethod("GetAllAsync") is not null),
+    ("tenant category repository can list platform categories", typeof(ITenantCategoryRepository).GetMethods().Any(method => method.Name == "GetAllAsync")),
     ("tenant category repository can lookup category by id", typeof(ITenantCategoryRepository).GetMethod("GetByIdAsync") is not null),
-    ("tenant repository can list platform tenants", typeof(ITenantRepository).GetMethod("GetAllAsync") is not null),
+    ("tenant repository can list platform tenants", typeof(ITenantRepository).GetMethods().Any(method => method.Name == "GetAllAsync")),
     ("tenants presentation has public categories endpoint", HasEndpointNamed(ReserveFlow.Modules.Tenants.Presentation.AssemblyReference.Assembly, "GetPublicCategoriesEndpoint")),
     ("tenants presentation has platform categories endpoint", HasEndpointNamed(ReserveFlow.Modules.Tenants.Presentation.AssemblyReference.Assembly, "GetPlatformCategoriesEndpoint")),
     ("tenants presentation has update category endpoint", HasEndpointNamed(ReserveFlow.Modules.Tenants.Presentation.AssemblyReference.Assembly, "UpdateTenantCategoryEndpoint")),
