@@ -78,6 +78,18 @@ var checks = new List<(string Name, bool Passed)>
     ("api pipeline uses rate limiter", SourceContains(
         "src/API/ReserveFlow.Api/Program.cs",
         "UseRateLimiter")),
+    ("common infrastructure has security headers middleware", SourceContains(
+        "src/Common/ReserveFlow.Common.Infrastructure/Security/SecurityHeadersMiddleware.cs",
+        "sealed class SecurityHeadersMiddleware") &&
+        SourceContains(
+            "src/Common/ReserveFlow.Common.Infrastructure/Security/SecurityHeadersMiddleware.cs",
+            "X-Content-Type-Options") &&
+        SourceContains(
+            "src/Common/ReserveFlow.Common.Infrastructure/Security/SecurityHeadersMiddleware.cs",
+            "Content-Security-Policy")),
+    ("api pipeline uses security headers middleware", SourceContains(
+        "src/API/ReserveFlow.Api/Program.cs",
+        "UseSecurityHeaders")),
     ("module configuration allows environment overrides", SourceContains(
         "src/API/ReserveFlow.Api/Extensions/ConfigurationExtensions.cs",
         "AddEnvironmentVariables")),
@@ -405,6 +417,81 @@ var checks = new List<(string Name, bool Passed)>
     ("backend ci runs integration tests", SourceContains(
         ".github/workflows/backend-ci.yml",
         "ReserveFlow.IntegrationTests.csproj")),
+    ("backend ci runs dependency vulnerability audit", SourceContains(
+        ".github/workflows/backend-ci.yml",
+        "dotnet list ReserveFlow.sln package --vulnerable --include-transitive") &&
+        SourceContains(
+            ".github/workflows/backend-ci.yml",
+            "has the following vulnerable packages") &&
+        SourceContains(
+            ".github/workflows/backend-ci.yml",
+            "Vulnerable NuGet packages detected.")),
+    ("migration service project exists", SourceContains(
+        "src/Tools/ReserveFlow.MigrationService/ReserveFlow.MigrationService.csproj",
+        "<TargetFramework>net8.0</TargetFramework>")),
+    ("solution includes migration service project", SourceContains(
+        "ReserveFlow.sln",
+        "ReserveFlow.MigrationService")),
+    ("migration service references module infrastructure projects", SourceContains(
+        "src/Tools/ReserveFlow.MigrationService/ReserveFlow.MigrationService.csproj",
+        "ReserveFlow.Modules.Identity.Infrastructure.csproj") &&
+        SourceContains(
+            "src/Tools/ReserveFlow.MigrationService/ReserveFlow.MigrationService.csproj",
+            "ReserveFlow.Modules.Bookings.Infrastructure.csproj") &&
+        SourceContains(
+            "src/Tools/ReserveFlow.MigrationService/ReserveFlow.MigrationService.csproj",
+            "ReserveFlow.Modules.Integrations.Infrastructure.csproj")),
+    ("migration service migrates every module db context", SourceContains(
+        "src/Tools/ReserveFlow.MigrationService/Program.cs",
+        "MigrateModuleAsync<IdentityDbContext>") &&
+        SourceContains(
+            "src/Tools/ReserveFlow.MigrationService/Program.cs",
+            "MigrateModuleAsync<TenantsDbContext>") &&
+        SourceContains(
+            "src/Tools/ReserveFlow.MigrationService/Program.cs",
+            "MigrateModuleAsync<CatalogDbContext>") &&
+        SourceContains(
+            "src/Tools/ReserveFlow.MigrationService/Program.cs",
+            "MigrateModuleAsync<StaffingDbContext>") &&
+        SourceContains(
+            "src/Tools/ReserveFlow.MigrationService/Program.cs",
+            "MigrateModuleAsync<ResourcesDbContext>") &&
+        SourceContains(
+            "src/Tools/ReserveFlow.MigrationService/Program.cs",
+            "MigrateModuleAsync<SchedulingDbContext>") &&
+        SourceContains(
+            "src/Tools/ReserveFlow.MigrationService/Program.cs",
+            "MigrateModuleAsync<BookingsDbContext>") &&
+        SourceContains(
+            "src/Tools/ReserveFlow.MigrationService/Program.cs",
+            "MigrateModuleAsync<NotificationsDbContext>") &&
+        SourceContains(
+            "src/Tools/ReserveFlow.MigrationService/Program.cs",
+            "MigrateModuleAsync<AuditDbContext>") &&
+        SourceContains(
+            "src/Tools/ReserveFlow.MigrationService/Program.cs",
+            "MigrateModuleAsync<ReportingDbContext>") &&
+        SourceContains(
+            "src/Tools/ReserveFlow.MigrationService/Program.cs",
+            "MigrateModuleAsync<IntegrationsDbContext>")),
+    ("migration service has production dockerfile", SourceContains(
+        "src/Tools/ReserveFlow.MigrationService/Dockerfile",
+        "ReserveFlow.MigrationService.csproj") &&
+        SourceContains(
+            "src/Tools/ReserveFlow.MigrationService/Dockerfile",
+            "USER $APP_UID") &&
+        SourceContains(
+            "src/Tools/ReserveFlow.MigrationService/Dockerfile",
+            "ENTRYPOINT [\"dotnet\", \"ReserveFlow.MigrationService.dll\"]")),
+    ("docker compose exposes migration runner profile", SourceContains(
+        "docker-compose.yml",
+        "reserveflow.migrations") &&
+        SourceContains(
+            "docker-compose.yml",
+            "profiles: [\"migrations\"]") &&
+        SourceContains(
+            "docker-compose.yml",
+            "dockerfile: src/Tools/ReserveFlow.MigrationService/Dockerfile")),
     ("central packages pin xunit", SourceContains(
         "Directory.Packages.props",
         "PackageVersion Include=\"xunit\"")),
@@ -477,6 +564,9 @@ var checks = new List<(string Name, bool Passed)>
         SourceContains(
             "test/ReserveFlow.ApiTests/System/SystemEndpointTests.cs",
             "LiveHealthEndpointReturnsHealthy")),
+    ("api tests verify security headers", SourceContains(
+        "test/ReserveFlow.ApiTests/System/SystemEndpointTests.cs",
+        "RootEndpointReturnsSecurityHeaders")),
     ("backend ci runs unit tests", SourceContains(
         ".github/workflows/backend-ci.yml",
         "ReserveFlow.UnitTests.csproj")),
@@ -597,6 +687,9 @@ var checks = new List<(string Name, bool Passed)>
     ("central packages pin swashbuckle openapi version", SourceContains(
         "Directory.Packages.props",
         "Swashbuckle.AspNetCore")),
+    ("central packages pin system text json security patch", SourceContains(
+        "Directory.Packages.props",
+        "PackageVersion Include=\"System.Text.Json\" Version=\"8.0.6\"")),
     ("api services register swagger generator", SourceContains(
         "src/API/ReserveFlow.Api/Program.cs",
         "AddSwaggerGen")),
@@ -761,6 +854,12 @@ var checks = new List<(string Name, bool Passed)>
     ("database initializer exposes maintenance database option", SourceContains(
         "src/Common/ReserveFlow.Common.Infrastructure/Data/DatabaseInitializerOptions.cs",
         "MaintenanceDatabase")),
+    ("database initializer exposes startup retry options", SourceContains(
+        "src/Common/ReserveFlow.Common.Infrastructure/Data/DatabaseInitializerOptions.cs",
+        "StartupRetryAttempts") &&
+        SourceContains(
+            "src/Common/ReserveFlow.Common.Infrastructure/Data/DatabaseInitializerOptions.cs",
+            "StartupRetryDelayMilliseconds")),
     ("common infrastructure has postgres database bootstrapper", SourceContains(
         "src/Common/ReserveFlow.Common.Infrastructure/Data/PostgresDatabaseBootstrapper.cs",
         "class PostgresDatabaseBootstrapper")),
@@ -768,9 +867,21 @@ var checks = new List<(string Name, bool Passed)>
     ("database schema initializer creates database before schemas when enabled", SourceContains(
         "src/Common/ReserveFlow.Common.Infrastructure/Data/DatabaseSchemaInitializerHostedService.cs",
         "EnsureDatabaseExistsAsync")),
+    ("database schema initializer retries transient postgres startup failures", SourceContains(
+        "src/Common/ReserveFlow.Common.Infrastructure/Data/DatabaseSchemaInitializerHostedService.cs",
+        "ExecuteWithStartupRetryAsync") &&
+        SourceContains(
+            "src/Common/ReserveFlow.Common.Infrastructure/Data/DatabaseSchemaInitializerHostedService.cs",
+            "IsTransientPostgresStartupException") &&
+        SourceContains(
+            "src/Common/ReserveFlow.Common.Infrastructure/Data/DatabaseSchemaInitializerHostedService.cs",
+            "57P03")),
     ("docker compose enables database bootstrap for local stack", SourceContains(
         "docker-compose.yml",
         "DatabaseInitializer__CreateDatabaseIfMissing: \"true\"")),
+    ("docker compose waits for postgres health before api startup", SourceContains(
+        "docker-compose.yml",
+        "condition: service_healthy")),
     ("common application has tenant access guard abstraction", typeof(ITenantAccessGuard).Name == nameof(ITenantAccessGuard)),
     ("common infrastructure has tenant access guard", typeof(TenantAccessGuard).Name == nameof(TenantAccessGuard)),
     ("tenant access guard allows current tenant", TenantAccessGuardAllowsCurrentTenant()),

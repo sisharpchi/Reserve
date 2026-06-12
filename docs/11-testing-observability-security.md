@@ -160,8 +160,16 @@ Public endpoint protection:
 - rate limit booking create
 - rate limit availability search
 - validation on all inputs
+- emit browser safety headers from the API composition root:
+  `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`,
+  `Permissions-Policy`, and API-safe `Content-Security-Policy`
 
 Login rate limiting primarily belongs to Keycloak. ReserveFlow still rate limits public booking and availability endpoints and any local auth context endpoints such as `/api/auth/me`.
+
+Dependency hygiene:
+
+- CI runs `dotnet list ReserveFlow.sln package --vulnerable --include-transitive`
+- security updates should stay inside the .NET 8 / EF Core 8.x baseline unless the baseline changes
 
 Audit:
 

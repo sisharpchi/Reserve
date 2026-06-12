@@ -46,6 +46,22 @@ public sealed class SystemEndpointTests(ReserveFlowApiFactory factory)
     }
 
     [Fact]
+    public async Task RootEndpointReturnsSecurityHeaders()
+    {
+        using HttpClient client = factory.CreateClient();
+
+        using HttpResponseMessage response = await client.GetAsync("/");
+
+        response.EnsureSuccessStatusCode();
+
+        AssertHeader(response, "X-Content-Type-Options", "nosniff");
+        AssertHeader(response, "X-Frame-Options", "DENY");
+        AssertHeader(response, "Referrer-Policy", "no-referrer");
+        AssertHeader(response, "Permissions-Policy", "accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()");
+        AssertHeader(response, "Content-Security-Policy", "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'");
+    }
+
+    [Fact]
     public async Task ProtectedAuthEndpointReturnsUnauthorizedWithoutToken()
     {
         using HttpClient client = factory.CreateClient();
@@ -53,6 +69,12 @@ public sealed class SystemEndpointTests(ReserveFlowApiFactory factory)
         using HttpResponseMessage response = await client.GetAsync("/api/auth/me");
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    private static void AssertHeader(HttpResponseMessage response, string name, string expectedValue)
+    {
+        Assert.True(response.Headers.TryGetValues(name, out IEnumerable<string>? values), $"Missing header {name}.");
+        Assert.Contains(expectedValue, values);
     }
 }
 

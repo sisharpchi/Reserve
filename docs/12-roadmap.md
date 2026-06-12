@@ -64,6 +64,7 @@ Add after MVP:
 Backend:
 
 - migrations tested on clean database
+- explicit `ReserveFlow.MigrationService` runner executed before API rollout
 - seed demo tenant works
 - Keycloak JWT validation flow tested
 - tenant isolation tested

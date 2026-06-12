@@ -14,6 +14,8 @@ services:
       DatabaseInitializer__Enabled: "true"
       DatabaseInitializer__CreateDatabaseIfMissing: "true"
       DatabaseInitializer__MaintenanceDatabase: postgres
+      DatabaseInitializer__StartupRetryAttempts: "30"
+      DatabaseInitializer__StartupRetryDelayMilliseconds: "1000"
       Identity__Authority: http://reserveflow.identity:8080/realms/reserveflow
       Identity__MetadataAddress: http://reserveflow.identity:8080/realms/reserveflow/.well-known/openid-configuration
       Identity__Audience: reserveflow-api
@@ -27,9 +29,22 @@ services:
       - "5080:8080"
     depends_on:
       reserveflow.database:
-        condition: service_started
+        condition: service_healthy
       reserveflow.identity:
         condition: service_started
+
+  reserveflow.migrations:
+    image: reserveflow-migrations
+    container_name: ReserveFlow.Migrations
+    profiles: ["migrations"]
+    build:
+      context: .
+      dockerfile: src/Tools/ReserveFlow.MigrationService/Dockerfile
+    environment:
+      ConnectionStrings__Database: Host=reserveflow.database;Port=5432;Database=reserveflow;Username=postgres;Password=postgres
+    depends_on:
+      reserveflow.database:
+        condition: service_healthy
 
   reserveflow.database:
     image: postgres:16

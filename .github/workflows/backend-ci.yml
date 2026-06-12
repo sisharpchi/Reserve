@@ -27,6 +27,17 @@ jobs:
       - name: Restore
         run: dotnet restore ReserveFlow.sln
 
+      - name: Dependency vulnerability audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          audit_output="$(dotnet list ReserveFlow.sln package --vulnerable --include-transitive)"
+          echo "$audit_output"
+          if grep -q "has the following vulnerable packages" <<< "$audit_output"; then
+            echo "Vulnerable NuGet packages detected."
+            exit 1
+          fi
+
       - name: Build
         run: dotnet build ReserveFlow.sln --no-restore -v minimal -maxcpucount:1 /nr:false
 

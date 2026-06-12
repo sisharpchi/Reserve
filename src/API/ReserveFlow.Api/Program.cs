@@ -56,6 +56,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseCorrelationId();
+app.UseSecurityHeaders();
 app.UseExceptionHandler();
 app.UseCors(CorsPolicies.WebApp);
 app.UseRateLimiter();
