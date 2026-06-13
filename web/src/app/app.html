@@ -1,0 +1,47 @@
+<div class="app-layout">
+  <!-- Top Navigation Bar -->
+  <nav class="main-nav glass">
+    <div class="nav-container">
+      <a routerLink="/" class="nav-logo">
+        Reserve<span>Flow</span>
+      </a>
+
+      <div class="nav-links">
+        <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="nav-link">Marketplace</a>
+        <a routerLink="/booking" routerLinkActive="active" class="nav-link">Find Booking</a>
+        
+        @if (authService.isPlatformAdmin()) {
+          <a routerLink="/platform" routerLinkActive="active" class="nav-link admin-link">Platform Portal</a>
+        }
+        @if (authService.isTenantAdmin()) {
+          <a routerLink="/admin" routerLinkActive="active" class="nav-link tenant-link">Admin Dashboard</a>
+        }
+        @if (authService.isStaff()) {
+          <a routerLink="/staff" routerLinkActive="active" class="nav-link staff-link">Staff Agenda</a>
+        }
+      </div>
+ 
+      <div class="nav-actions">
+        <!-- Theme Toggle -->
+        <button class="theme-toggle" (click)="toggleTheme()" aria-label="Toggle Theme">
+          {{ isDarkTheme() ? '☀️' : '🌙' }}
+        </button>
+ 
+        <!-- User Authentication Card -->
+        @if (authService.isAuthenticated()) {
+          <div class="user-menu">
+            <a routerLink="/profile" class="user-name hover-underline">Hi, {{ authService.username() }} ⚙️</a>
+            <button class="btn btn-secondary btn-sm" (click)="authService.logout()">Logout</button>
+          </div>
+        } @else {
+          <button class="btn btn-primary btn-sm" (click)="authService.login()">Login</button>
+        }
+      </div>
+    </div>
+  </nav>
+
+  <!-- Router Outlet Container -->
+  <main class="main-content">
+    <router-outlet></router-outlet>
+  </main>
+</div>

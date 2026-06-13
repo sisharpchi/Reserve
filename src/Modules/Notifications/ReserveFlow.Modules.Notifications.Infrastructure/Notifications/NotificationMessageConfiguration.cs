@@ -20,6 +20,8 @@ internal sealed class NotificationMessageConfiguration : IEntityTypeConfiguratio
         builder.Property(message => message.Body).HasColumnName("body").IsRequired();
         builder.Property(message => message.Status).HasColumnName("status").HasConversion<string>().HasMaxLength(50).IsRequired();
         builder.Property(message => message.CreatedAtUtc).HasColumnName("created_at_utc").IsRequired();
+        builder.Property(message => message.DeliverAtUtc).HasColumnName("deliver_at_utc").IsRequired();
+        builder.Property(message => message.CorrelationKey).HasColumnName("correlation_key").HasMaxLength(200);
         builder.Property(message => message.SentAtUtc).HasColumnName("sent_at_utc");
         builder.Property(message => message.Error).HasColumnName("error");
 
@@ -27,5 +29,11 @@ internal sealed class NotificationMessageConfiguration : IEntityTypeConfiguratio
 
         builder.HasIndex(message => new { message.TenantId, message.Status, message.CreatedAtUtc })
             .HasDatabaseName("ix_notification_messages_tenant_status_created");
+
+        builder.HasIndex(message => new { message.Status, message.DeliverAtUtc })
+            .HasDatabaseName("ix_notification_messages_status_deliver_at");
+
+        builder.HasIndex(message => new { message.TenantId, message.CorrelationKey, message.Status })
+            .HasDatabaseName("ix_notification_messages_tenant_correlation_status");
     }
 }

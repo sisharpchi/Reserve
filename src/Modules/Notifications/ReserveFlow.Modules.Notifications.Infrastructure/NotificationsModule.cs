@@ -3,10 +3,14 @@ using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using ReserveFlow.Common.Application.Messaging;
+using ReserveFlow.Common.Application.Pagination;
 using ReserveFlow.Common.Presentation.Endpoints;
 using ReserveFlow.Modules.Notifications.Application.Notifications;
+using ReserveFlow.Modules.Notifications.Application.Notifications.CancelPendingNotifications;
+using ReserveFlow.Modules.Notifications.Application.Notifications.GetNotifications;
 using ReserveFlow.Modules.Notifications.Application.Notifications.QueueNotification;
 using ReserveFlow.Modules.Notifications.Infrastructure.Database;
+using ReserveFlow.Modules.Notifications.Infrastructure.Delivery;
 using ReserveFlow.Modules.Notifications.Infrastructure.Notifications;
 using ReserveFlow.Modules.Notifications.Infrastructure.Sending;
 
@@ -27,6 +31,10 @@ public static class NotificationsModule
         services.AddScoped<INotificationsUnitOfWork>(serviceProvider => serviceProvider.GetRequiredService<NotificationsDbContext>());
         services.AddScoped<INotificationSender, FakeNotificationSender>();
         services.AddScoped<ICommandHandler<QueueNotificationCommand, NotificationResponse>, QueueNotificationCommandHandler>();
+        services.AddScoped<ICommandHandler<CancelPendingNotificationsCommand, int>, CancelPendingNotificationsCommandHandler>();
+        services.AddScoped<IQueryHandler<GetNotificationsQuery, PagedResponse<NotificationResponse>>, GetNotificationsQueryHandler>();
+        services.Configure<NotificationDeliveryOptions>(configuration.GetSection("Notifications:Delivery"));
+        services.AddHostedService<NotificationDeliveryHostedService>();
         services.AddEndpoints(Presentation.AssemblyReference.Assembly);
 
         return services;

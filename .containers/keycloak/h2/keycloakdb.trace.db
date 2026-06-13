@@ -1,0 +1,278 @@
+2026-06-01 12:47:41.661615Z jdbc[3]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "MIGRATION_MODEL" not found (this database is empty); SQL statement:
+SELECT ID, VERSION FROM MIGRATION_MODEL ORDER BY UPDATE_TIME DESC [42104-224]
+2026-06-01 12:47:42.603554Z jdbc[3]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "DATABASECHANGELOG" not found (this database is empty); SQL statement:
+SELECT COUNT(*) FROM PUBLIC.DATABASECHANGELOG [42104-224]
+2026-06-01 12:47:42.797872Z jdbc[4]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "DATABASECHANGELOGLOCK" not found (this database is empty); SQL statement:
+SELECT COUNT(*) FROM PUBLIC.DATABASECHANGELOGLOCK [42104-224]
+2026-06-01 12:47:42.826707Z jdbc[3]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "DATABASECHANGELOG" not found; SQL statement:
+SELECT COUNT(*) FROM PUBLIC.DATABASECHANGELOG [42102-224]
+2026-06-09 09:58:22.744413Z database: flush
+org.h2.message.DbException: General error: "org.h2.mvstore.MVStoreException: Writing to sun.nio.ch.FileChannelImpl@b033251 failed; length 8192 at 40960 [2.2.224/2]" [50000-224]
+	at org.h2.message.DbException.get(DbException.java:212)
+	at org.h2.message.DbException.convert(DbException.java:407)
+	at org.h2.mvstore.db.Store.lambda$new$0(Store.java:122)
+	at org.h2.mvstore.MVStore.handleException(MVStore.java:1546)
+	at org.h2.mvstore.MVStore.panic(MVStore.java:371)
+	at org.h2.mvstore.FileStore.storeBuffer(FileStore.java:1527)
+	at org.h2.mvstore.FileStore.lambda$serializeAndStore$3(FileStore.java:1432)
+	at org.h2.mvstore.FileStore.submitOrRun(FileStore.java:1401)
+	at org.h2.mvstore.FileStore.serializeAndStore(FileStore.java:1432)
+	at org.h2.mvstore.FileStore.lambda$storeIt$2(FileStore.java:1376)
+	at org.h2.mvstore.FileStore.submitOrRun(FileStore.java:1401)
+	at org.h2.mvstore.FileStore.storeIt(FileStore.java:1375)
+	at org.h2.mvstore.MVStore.storeNow(MVStore.java:843)
+	at org.h2.mvstore.MVStore.store(MVStore.java:808)
+	at org.h2.mvstore.MVStore.commit(MVStore.java:778)
+	at org.h2.mvstore.MVStore.commit(MVStore.java:770)
+	at org.h2.mvstore.tx.TransactionStore.close(TransactionStore.java:365)
+	at org.h2.mvstore.db.Store.close(Store.java:349)
+	at org.h2.engine.Database.closeOpenFilesAndUnlock(Database.java:1293)
+	at org.h2.engine.Database.<init>(Database.java:401)
+	at org.h2.engine.Engine.openSession(Engine.java:92)
+	at org.h2.engine.Engine.openSession(Engine.java:222)
+	at org.h2.engine.Engine.createSession(Engine.java:201)
+	at org.h2.engine.SessionRemote.connectEmbeddedOrServer(SessionRemote.java:343)
+	at org.h2.jdbc.JdbcConnection.<init>(JdbcConnection.java:125)
+	at org.h2.Driver.connect(Driver.java:59)
+	at io.agroal.pool.ConnectionFactory.createConnection(ConnectionFactory.java:225)
+	at io.agroal.pool.ConnectionPool$CreateConnectionTask.call(ConnectionPool.java:545)
+	at io.agroal.pool.ConnectionPool$CreateConnectionTask.call(ConnectionPool.java:526)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:317)
+	at io.agroal.pool.util.PriorityScheduledExecutor.beforeExecute(PriorityScheduledExecutor.java:75)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1142)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)
+	at java.base/java.lang.Thread.run(Thread.java:1583)
+Caused by: org.h2.jdbc.JdbcSQLNonTransientException: General error: "org.h2.mvstore.MVStoreException: Writing to sun.nio.ch.FileChannelImpl@b033251 failed; length 8192 at 40960 [2.2.224/2]" [50000-224]
+	at org.h2.message.DbException.getJdbcSQLException(DbException.java:566)
+	at org.h2.message.DbException.getJdbcSQLException(DbException.java:489)
+	... 34 more
+Caused by: org.h2.mvstore.MVStoreException: Writing to sun.nio.ch.FileChannelImpl@b033251 failed; length 8192 at 40960 [2.2.224/2]
+	at org.h2.mvstore.DataUtils.newMVStoreException(DataUtils.java:996)
+	at org.h2.mvstore.DataUtils.writeFully(DataUtils.java:478)
+	at org.h2.mvstore.SingleFileStore.writeFully(SingleFileStore.java:67)
+	at org.h2.mvstore.SingleFileStore.writeFully(SingleFileStore.java:28)
+	at org.h2.mvstore.RandomAccessStore.writeChunk(RandomAccessStore.java:366)
+	at org.h2.mvstore.RandomAccessStore.writeChunk(RandomAccessStore.java:28)
+	at org.h2.mvstore.FileStore.storeBuffer(FileStore.java:1524)
+	... 28 more
+Caused by: java.nio.channels.ClosedChannelException
+	at java.base/sun.nio.ch.FileChannelImpl.ensureOpen(FileChannelImpl.java:160)
+	at java.base/sun.nio.ch.FileChannelImpl.write(FileChannelImpl.java:1002)
+	at org.h2.mvstore.DataUtils.writeFully(DataUtils.java:474)
+	... 33 more
+2026-06-09 09:58:24.555487Z database: flush
+org.h2.message.DbException: General error: "org.h2.mvstore.MVStoreException: Could not open file /opt/keycloak/data/h2/keycloakdb.mv.db [2.2.224/1]" [50000-224]
+	at org.h2.message.DbException.get(DbException.java:212)
+	at org.h2.message.DbException.convert(DbException.java:407)
+	at org.h2.mvstore.db.Store.lambda$new$0(Store.java:122)
+	at org.h2.mvstore.MVStore.handleException(MVStore.java:1546)
+	at org.h2.mvstore.MVStore.panic(MVStore.java:371)
+	at org.h2.mvstore.MVStore.<init>(MVStore.java:291)
+	at org.h2.mvstore.MVStore$Builder.open(MVStore.java:2035)
+	at org.h2.mvstore.db.Store.<init>(Store.java:133)
+	at org.h2.engine.Database.<init>(Database.java:326)
+	at org.h2.engine.Engine.openSession(Engine.java:92)
+	at org.h2.engine.Engine.openSession(Engine.java:222)
+	at org.h2.engine.Engine.createSession(Engine.java:201)
+	at org.h2.engine.SessionRemote.connectEmbeddedOrServer(SessionRemote.java:343)
+	at org.h2.jdbc.JdbcConnection.<init>(JdbcConnection.java:125)
+	at org.h2.Driver.connect(Driver.java:59)
+	at io.agroal.pool.ConnectionFactory.createConnection(ConnectionFactory.java:225)
+	at io.agroal.pool.ConnectionPool$CreateConnectionTask.call(ConnectionPool.java:545)
+	at io.agroal.pool.ConnectionPool$CreateConnectionTask.call(ConnectionPool.java:526)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:317)
+	at io.agroal.pool.util.PriorityScheduledExecutor.beforeExecute(PriorityScheduledExecutor.java:75)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1142)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)
+	at java.base/java.lang.Thread.run(Thread.java:1583)
+Caused by: org.h2.jdbc.JdbcSQLNonTransientException: General error: "org.h2.mvstore.MVStoreException: Could not open file /opt/keycloak/data/h2/keycloakdb.mv.db [2.2.224/1]" [50000-224]
+	at org.h2.message.DbException.getJdbcSQLException(DbException.java:566)
+	at org.h2.message.DbException.getJdbcSQLException(DbException.java:489)
+	... 23 more
+Caused by: org.h2.mvstore.MVStoreException: Could not open file /opt/keycloak/data/h2/keycloakdb.mv.db [2.2.224/1]
+	at org.h2.mvstore.DataUtils.newMVStoreException(DataUtils.java:996)
+	at org.h2.mvstore.SingleFileStore.open(SingleFileStore.java:126)
+	at org.h2.mvstore.SingleFileStore.open(SingleFileStore.java:81)
+	at org.h2.mvstore.MVStore.<init>(MVStore.java:286)
+	... 17 more
+Caused by: java.nio.channels.ClosedByInterruptException
+	at java.base/java.nio.channels.spi.AbstractInterruptibleChannel.end(AbstractInterruptibleChannel.java:200)
+	at java.base/sun.nio.ch.FileChannelImpl.endBlocking(FileChannelImpl.java:172)
+	at java.base/sun.nio.ch.FileChannelImpl.size(FileChannelImpl.java:430)
+	at org.h2.mvstore.SingleFileStore.open(SingleFileStore.java:120)
+	... 19 more
+2026-06-09 09:58:25.632630Z database: opening /opt/keycloak/data/h2/keycloakdb
+org.h2.message.DbException: IO Exception: "/opt/keycloak/data/h2/keycloakdb.mv.db" [90028-224]
+	at org.h2.message.DbException.get(DbException.java:212)
+	at org.h2.mvstore.db.Store.convertMVStoreException(Store.java:168)
+	at org.h2.mvstore.db.Store.<init>(Store.java:142)
+	at org.h2.engine.Database.<init>(Database.java:326)
+	at org.h2.engine.Engine.openSession(Engine.java:92)
+	at org.h2.engine.Engine.openSession(Engine.java:222)
+	at org.h2.engine.Engine.createSession(Engine.java:201)
+	at org.h2.engine.SessionRemote.connectEmbeddedOrServer(SessionRemote.java:343)
+	at org.h2.jdbc.JdbcConnection.<init>(JdbcConnection.java:125)
+	at org.h2.Driver.connect(Driver.java:59)
+	at io.agroal.pool.ConnectionFactory.createConnection(ConnectionFactory.java:225)
+	at io.agroal.pool.ConnectionPool$CreateConnectionTask.call(ConnectionPool.java:545)
+	at io.agroal.pool.ConnectionPool$CreateConnectionTask.call(ConnectionPool.java:526)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:317)
+	at io.agroal.pool.util.PriorityScheduledExecutor.beforeExecute(PriorityScheduledExecutor.java:75)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1142)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)
+	at java.base/java.lang.Thread.run(Thread.java:1583)
+Caused by: org.h2.jdbc.JdbcSQLNonTransientException: IO Exception: "/opt/keycloak/data/h2/keycloakdb.mv.db" [90028-224]
+	at org.h2.message.DbException.getJdbcSQLException(DbException.java:566)
+	at org.h2.message.DbException.getJdbcSQLException(DbException.java:489)
+	... 18 more
+Caused by: org.h2.mvstore.MVStoreException: Could not open file /opt/keycloak/data/h2/keycloakdb.mv.db [2.2.224/1]
+	at org.h2.mvstore.DataUtils.newMVStoreException(DataUtils.java:996)
+	at org.h2.mvstore.SingleFileStore.open(SingleFileStore.java:126)
+	at org.h2.mvstore.SingleFileStore.open(SingleFileStore.java:81)
+	at org.h2.mvstore.MVStore.<init>(MVStore.java:286)
+	at org.h2.mvstore.MVStore$Builder.open(MVStore.java:2035)
+	at org.h2.mvstore.db.Store.<init>(Store.java:133)
+	... 15 more
+Caused by: java.nio.channels.ClosedByInterruptException
+	at java.base/java.nio.channels.spi.AbstractInterruptibleChannel.end(AbstractInterruptibleChannel.java:200)
+	at java.base/sun.nio.ch.FileChannelImpl.endBlocking(FileChannelImpl.java:172)
+	at java.base/sun.nio.ch.FileChannelImpl.size(FileChannelImpl.java:430)
+	at org.h2.mvstore.SingleFileStore.open(SingleFileStore.java:120)
+	... 19 more
+2026-06-09 09:58:31.398064Z database: flush
+org.h2.message.DbException: General error: "org.h2.mvstore.MVStoreException: Writing to sun.nio.ch.FileChannelImpl@7bd43f2b failed; length 8192 at 40960 [2.2.224/2]" [50000-224]
+	at org.h2.message.DbException.get(DbException.java:212)
+	at org.h2.message.DbException.convert(DbException.java:407)
+	at org.h2.mvstore.db.Store.lambda$new$0(Store.java:122)
+	at org.h2.mvstore.MVStore.handleException(MVStore.java:1546)
+	at org.h2.mvstore.MVStore.panic(MVStore.java:371)
+	at org.h2.mvstore.FileStore.storeBuffer(FileStore.java:1527)
+	at org.h2.mvstore.FileStore.lambda$serializeAndStore$3(FileStore.java:1432)
+	at org.h2.mvstore.FileStore.submitOrRun(FileStore.java:1401)
+	at org.h2.mvstore.FileStore.serializeAndStore(FileStore.java:1432)
+	at org.h2.mvstore.FileStore.lambda$storeIt$2(FileStore.java:1376)
+	at org.h2.mvstore.FileStore.submitOrRun(FileStore.java:1401)
+	at org.h2.mvstore.FileStore.storeIt(FileStore.java:1375)
+	at org.h2.mvstore.MVStore.storeNow(MVStore.java:843)
+	at org.h2.mvstore.MVStore.store(MVStore.java:808)
+	at org.h2.mvstore.MVStore.commit(MVStore.java:778)
+	at org.h2.mvstore.MVStore.commit(MVStore.java:770)
+	at org.h2.mvstore.tx.TransactionStore.close(TransactionStore.java:365)
+	at org.h2.mvstore.db.Store.close(Store.java:349)
+	at org.h2.engine.Database.closeOpenFilesAndUnlock(Database.java:1293)
+	at org.h2.engine.Database.<init>(Database.java:401)
+	at org.h2.engine.Engine.openSession(Engine.java:92)
+	at org.h2.engine.Engine.openSession(Engine.java:222)
+	at org.h2.engine.Engine.createSession(Engine.java:201)
+	at org.h2.engine.SessionRemote.connectEmbeddedOrServer(SessionRemote.java:343)
+	at org.h2.jdbc.JdbcConnection.<init>(JdbcConnection.java:125)
+	at org.h2.Driver.connect(Driver.java:59)
+	at io.agroal.pool.ConnectionFactory.createConnection(ConnectionFactory.java:225)
+	at io.agroal.pool.ConnectionPool$CreateConnectionTask.call(ConnectionPool.java:545)
+	at io.agroal.pool.ConnectionPool$CreateConnectionTask.call(ConnectionPool.java:526)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:317)
+	at io.agroal.pool.util.PriorityScheduledExecutor.beforeExecute(PriorityScheduledExecutor.java:75)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1142)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)
+	at java.base/java.lang.Thread.run(Thread.java:1583)
+Caused by: org.h2.jdbc.JdbcSQLNonTransientException: General error: "org.h2.mvstore.MVStoreException: Writing to sun.nio.ch.FileChannelImpl@7bd43f2b failed; length 8192 at 40960 [2.2.224/2]" [50000-224]
+	at org.h2.message.DbException.getJdbcSQLException(DbException.java:566)
+	at org.h2.message.DbException.getJdbcSQLException(DbException.java:489)
+	... 34 more
+Caused by: org.h2.mvstore.MVStoreException: Writing to sun.nio.ch.FileChannelImpl@7bd43f2b failed; length 8192 at 40960 [2.2.224/2]
+	at org.h2.mvstore.DataUtils.newMVStoreException(DataUtils.java:996)
+	at org.h2.mvstore.DataUtils.writeFully(DataUtils.java:478)
+	at org.h2.mvstore.SingleFileStore.writeFully(SingleFileStore.java:67)
+	at org.h2.mvstore.SingleFileStore.writeFully(SingleFileStore.java:28)
+	at org.h2.mvstore.RandomAccessStore.writeChunk(RandomAccessStore.java:366)
+	at org.h2.mvstore.RandomAccessStore.writeChunk(RandomAccessStore.java:28)
+	at org.h2.mvstore.FileStore.storeBuffer(FileStore.java:1524)
+	... 28 more
+Caused by: java.nio.channels.ClosedChannelException
+	at java.base/sun.nio.ch.FileChannelImpl.ensureOpen(FileChannelImpl.java:160)
+	at java.base/sun.nio.ch.FileChannelImpl.write(FileChannelImpl.java:1002)
+	at org.h2.mvstore.DataUtils.writeFully(DataUtils.java:474)
+	... 33 more
+2026-06-09 09:58:32.163443Z database: flush
+org.h2.message.DbException: General error: "org.h2.mvstore.MVStoreException: Could not open file /opt/keycloak/data/h2/keycloakdb.mv.db [2.2.224/1]" [50000-224]
+	at org.h2.message.DbException.get(DbException.java:212)
+	at org.h2.message.DbException.convert(DbException.java:407)
+	at org.h2.mvstore.db.Store.lambda$new$0(Store.java:122)
+	at org.h2.mvstore.MVStore.handleException(MVStore.java:1546)
+	at org.h2.mvstore.MVStore.panic(MVStore.java:371)
+	at org.h2.mvstore.MVStore.<init>(MVStore.java:291)
+	at org.h2.mvstore.MVStore$Builder.open(MVStore.java:2035)
+	at org.h2.mvstore.db.Store.<init>(Store.java:133)
+	at org.h2.engine.Database.<init>(Database.java:326)
+	at org.h2.engine.Engine.openSession(Engine.java:92)
+	at org.h2.engine.Engine.openSession(Engine.java:222)
+	at org.h2.engine.Engine.createSession(Engine.java:201)
+	at org.h2.engine.SessionRemote.connectEmbeddedOrServer(SessionRemote.java:343)
+	at org.h2.jdbc.JdbcConnection.<init>(JdbcConnection.java:125)
+	at org.h2.Driver.connect(Driver.java:59)
+	at io.agroal.pool.ConnectionFactory.createConnection(ConnectionFactory.java:225)
+	at io.agroal.pool.ConnectionPool$CreateConnectionTask.call(ConnectionPool.java:545)
+	at io.agroal.pool.ConnectionPool$CreateConnectionTask.call(ConnectionPool.java:526)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:317)
+	at io.agroal.pool.util.PriorityScheduledExecutor.beforeExecute(PriorityScheduledExecutor.java:75)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1142)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)
+	at java.base/java.lang.Thread.run(Thread.java:1583)
+Caused by: org.h2.jdbc.JdbcSQLNonTransientException: General error: "org.h2.mvstore.MVStoreException: Could not open file /opt/keycloak/data/h2/keycloakdb.mv.db [2.2.224/1]" [50000-224]
+	at org.h2.message.DbException.getJdbcSQLException(DbException.java:566)
+	at org.h2.message.DbException.getJdbcSQLException(DbException.java:489)
+	... 23 more
+Caused by: org.h2.mvstore.MVStoreException: Could not open file /opt/keycloak/data/h2/keycloakdb.mv.db [2.2.224/1]
+	at org.h2.mvstore.DataUtils.newMVStoreException(DataUtils.java:996)
+	at org.h2.mvstore.SingleFileStore.open(SingleFileStore.java:126)
+	at org.h2.mvstore.SingleFileStore.open(SingleFileStore.java:81)
+	at org.h2.mvstore.MVStore.<init>(MVStore.java:286)
+	... 17 more
+Caused by: java.nio.channels.ClosedByInterruptException
+	at java.base/java.nio.channels.spi.AbstractInterruptibleChannel.end(AbstractInterruptibleChannel.java:200)
+	at java.base/sun.nio.ch.FileChannelImpl.endBlocking(FileChannelImpl.java:172)
+	at java.base/sun.nio.ch.FileChannelImpl.size(FileChannelImpl.java:430)
+	at org.h2.mvstore.SingleFileStore.open(SingleFileStore.java:120)
+	... 19 more
+2026-06-09 09:58:32.618214Z database: opening /opt/keycloak/data/h2/keycloakdb
+org.h2.message.DbException: IO Exception: "/opt/keycloak/data/h2/keycloakdb.mv.db" [90028-224]
+	at org.h2.message.DbException.get(DbException.java:212)
+	at org.h2.mvstore.db.Store.convertMVStoreException(Store.java:168)
+	at org.h2.mvstore.db.Store.<init>(Store.java:142)
+	at org.h2.engine.Database.<init>(Database.java:326)
+	at org.h2.engine.Engine.openSession(Engine.java:92)
+	at org.h2.engine.Engine.openSession(Engine.java:222)
+	at org.h2.engine.Engine.createSession(Engine.java:201)
+	at org.h2.engine.SessionRemote.connectEmbeddedOrServer(SessionRemote.java:343)
+	at org.h2.jdbc.JdbcConnection.<init>(JdbcConnection.java:125)
+	at org.h2.Driver.connect(Driver.java:59)
+	at io.agroal.pool.ConnectionFactory.createConnection(ConnectionFactory.java:225)
+	at io.agroal.pool.ConnectionPool$CreateConnectionTask.call(ConnectionPool.java:545)
+	at io.agroal.pool.ConnectionPool$CreateConnectionTask.call(ConnectionPool.java:526)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:317)
+	at io.agroal.pool.util.PriorityScheduledExecutor.beforeExecute(PriorityScheduledExecutor.java:75)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1142)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)
+	at java.base/java.lang.Thread.run(Thread.java:1583)
+Caused by: org.h2.jdbc.JdbcSQLNonTransientException: IO Exception: "/opt/keycloak/data/h2/keycloakdb.mv.db" [90028-224]
+	at org.h2.message.DbException.getJdbcSQLException(DbException.java:566)
+	at org.h2.message.DbException.getJdbcSQLException(DbException.java:489)
+	... 18 more
+Caused by: org.h2.mvstore.MVStoreException: Could not open file /opt/keycloak/data/h2/keycloakdb.mv.db [2.2.224/1]
+	at org.h2.mvstore.DataUtils.newMVStoreException(DataUtils.java:996)
+	at org.h2.mvstore.SingleFileStore.open(SingleFileStore.java:126)
+	at org.h2.mvstore.SingleFileStore.open(SingleFileStore.java:81)
+	at org.h2.mvstore.MVStore.<init>(MVStore.java:286)
+	at org.h2.mvstore.MVStore$Builder.open(MVStore.java:2035)
+	at org.h2.mvstore.db.Store.<init>(Store.java:133)
+	... 15 more
+Caused by: java.nio.channels.ClosedByInterruptException
+	at java.base/java.nio.channels.spi.AbstractInterruptibleChannel.end(AbstractInterruptibleChannel.java:200)
+	at java.base/sun.nio.ch.FileChannelImpl.endBlocking(FileChannelImpl.java:172)
+	at java.base/sun.nio.ch.FileChannelImpl.size(FileChannelImpl.java:430)
+	at org.h2.mvstore.SingleFileStore.open(SingleFileStore.java:120)
+	... 19 more

@@ -11,6 +11,8 @@ public sealed record NotificationResponse(
     string Body,
     string Status,
     DateTime CreatedAtUtc,
+    DateTime DeliverAtUtc,
+    string? CorrelationKey,
     DateTime? SentAtUtc,
     string? Error)
 {
@@ -25,6 +27,8 @@ public sealed record NotificationResponse(
             message.Body,
             message.Status.ToString(),
             message.CreatedAtUtc,
+            message.DeliverAtUtc,
+            message.CorrelationKey,
             message.SentAtUtc,
             message.Error);
     }

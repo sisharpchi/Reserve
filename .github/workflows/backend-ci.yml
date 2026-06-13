@@ -27,11 +27,34 @@ jobs:
       - name: Restore
         run: dotnet restore ReserveFlow.sln
 
+      - name: Dependency vulnerability audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          audit_output="$(dotnet list ReserveFlow.sln package --vulnerable --include-transitive)"
+          echo "$audit_output"
+          if grep -q "has the following vulnerable packages" <<< "$audit_output"; then
+            echo "Vulnerable NuGet packages detected."
+            exit 1
+          fi
+
       - name: Build
         run: dotnet build ReserveFlow.sln --no-restore -v minimal -maxcpucount:1 /nr:false
 
       - name: Smoke tests
         run: dotnet run --project test/ReserveFlow.Backend.SmokeTests/ReserveFlow.Backend.SmokeTests.csproj --no-build
+
+      - name: Unit tests
+        run: dotnet test test/ReserveFlow.UnitTests/ReserveFlow.UnitTests.csproj --no-build --logger "trx;LogFileName=unit-tests.trx"
+
+      - name: Architecture tests
+        run: dotnet test test/ReserveFlow.ArchitectureTests/ReserveFlow.ArchitectureTests.csproj --no-build --logger "trx;LogFileName=architecture-tests.trx"
+
+      - name: API tests
+        run: dotnet test test/ReserveFlow.ApiTests/ReserveFlow.ApiTests.csproj --no-build --logger "trx;LogFileName=api-tests.trx"
+
+      - name: Integration tests
+        run: dotnet test test/ReserveFlow.IntegrationTests/ReserveFlow.IntegrationTests.csproj --no-build --logger "trx;LogFileName=integration-tests.trx"
 
       - name: Validate Docker Compose
         run: docker compose config --quiet

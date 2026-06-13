@@ -12,6 +12,8 @@ internal static class ConfigurationExtensions
             configurationBuilder.AddJsonFile($"modules.{module}.Development.json", optional: true, reloadOnChange: true);
         }
 
+        configurationBuilder.AddEnvironmentVariables();
+
         return configurationBuilder;
     }
 }

@@ -16,6 +16,7 @@ using ReserveFlow.Common.Infrastructure.Data;
 using ReserveFlow.Common.Infrastructure.Errors;
 using ReserveFlow.Common.Infrastructure.Identity;
 using ReserveFlow.Common.Infrastructure.Observability;
+using ReserveFlow.Common.Infrastructure.Tenancy;
 
 namespace ReserveFlow.Common.Infrastructure;
 
@@ -58,6 +59,7 @@ public static class InfrastructureConfiguration
         services.AddHttpContextAccessor();
         services.AddScoped<ICurrentUser, HttpCurrentUser>();
         services.AddScoped<ITenantContext, HttpTenantContext>();
+        services.AddScoped<ITenantSlugResolver, PostgresTenantSlugResolver>();
         services.AddScoped<ITenantAccessGuard, TenantAccessGuard>();
         services.AddSingleton<IDatabaseConnectionStringProvider, DatabaseConnectionStringProvider>();
         services.Configure<DatabaseInitializerOptions>(configuration.GetSection("DatabaseInitializer"));

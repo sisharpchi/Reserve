@@ -1,5 +1,10 @@
 {
   "Notifications": {
-    "Sender": "Fake"
+    "Sender": "Fake",
+    "Delivery": {
+      "Enabled": true,
+      "BatchSize": 25,
+      "PollingIntervalSeconds": 5
+    }
   }
 }

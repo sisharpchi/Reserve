@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Routing;
 using ReserveFlow.Common.Application.Messaging;
+using ReserveFlow.Common.Application.Pagination;
 using ReserveFlow.Common.Presentation.Endpoints;
 using ReserveFlow.Modules.Resources.Application.Resources;
 using ReserveFlow.Modules.Resources.Application.Resources.GetResources;
@@ -22,13 +23,28 @@ internal sealed class GetAdminResourcesEndpoint : IEndpoint
             .WithName("GetAdminResources");
     }
 
-    private static async Task<Ok<IReadOnlyList<ResourceResponse>>> Handle(
+    private static async Task<Ok<PagedResponse<ResourceResponse>>> Handle(
         Guid tenantId,
-        IQueryHandler<GetResourcesQuery, IReadOnlyList<ResourceResponse>> handler,
+        int? pageNumber,
+        int? pageSize,
+        string? search,
+        bool? isActive,
+        string? resourceType,
+        string? sortBy,
+        string? sortDirection,
+        IQueryHandler<GetResourcesQuery, PagedResponse<ResourceResponse>> handler,
         CancellationToken cancellationToken)
     {
-        IReadOnlyList<ResourceResponse> response = await handler.Handle(
-            new GetResourcesQuery(tenantId),
+        PagedResponse<ResourceResponse> response = await handler.Handle(
+            new GetResourcesQuery(
+                tenantId,
+                pageNumber,
+                pageSize,
+                search,
+                isActive,
+                resourceType,
+                sortBy,
+                sortDirection),
             cancellationToken);
 
         return TypedResults.Ok(response);

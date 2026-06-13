@@ -1,3 +1,4 @@
+using ReserveFlow.Common.Application.Pagination;
 using ReserveFlow.Modules.Staffing.Domain.StaffMembers;
 
 namespace ReserveFlow.Modules.Staffing.Application.StaffMembers;
@@ -10,6 +11,15 @@ public interface IStaffMemberRepository
 
     Task<IReadOnlyList<StaffMember>> GetByTenantIdAsync(
         Guid tenantId,
+        CancellationToken cancellationToken = default);
+
+    Task<PagedResult<StaffMember>> GetByTenantIdAsync(
+        Guid tenantId,
+        PageRequest pageRequest,
+        string? search,
+        bool? isActive,
+        string? sortBy,
+        string? sortDirection,
         CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<StaffMember>> GetActiveByTenantIdAsync(

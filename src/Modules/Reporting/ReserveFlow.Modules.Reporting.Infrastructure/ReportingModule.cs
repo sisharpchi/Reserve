@@ -6,6 +6,8 @@ using ReserveFlow.Common.Application.Messaging;
 using ReserveFlow.Common.Presentation.Endpoints;
 using ReserveFlow.Modules.Reporting.Application.Reports;
 using ReserveFlow.Modules.Reporting.Application.Reports.GetDailyBookingReport;
+using ReserveFlow.Modules.Reporting.Application.Reports.GetNoShowReport;
+using ReserveFlow.Modules.Reporting.Application.Reports.GetStaffUtilizationReport;
 using ReserveFlow.Modules.Reporting.Application.Reports.RecordDailyBookingReport;
 using ReserveFlow.Modules.Reporting.Infrastructure.Database;
 using ReserveFlow.Modules.Reporting.Infrastructure.Reports;
@@ -24,9 +26,12 @@ public static class ReportingModule
                 npgsqlOptions => npgsqlOptions.MigrationsHistoryTable(HistoryRepository.DefaultTableName, Schemas.Reporting)));
 
         services.AddScoped<IReportingRepository, ReportingRepository>();
+        services.AddScoped<IStaffUtilizationReportRepository, StaffUtilizationReportRepository>();
         services.AddScoped<IReportingUnitOfWork>(serviceProvider => serviceProvider.GetRequiredService<ReportingDbContext>());
         services.AddScoped<ICommandHandler<RecordDailyBookingReportCommand, DailyBookingReportResponse>, RecordDailyBookingReportCommandHandler>();
         services.AddScoped<IQueryHandler<GetDailyBookingReportQuery, DailyBookingReportResponse?>, GetDailyBookingReportQueryHandler>();
+        services.AddScoped<IQueryHandler<GetNoShowReportQuery, NoShowReportResponse?>, GetNoShowReportQueryHandler>();
+        services.AddScoped<IQueryHandler<GetStaffUtilizationReportQuery, StaffUtilizationReportResponse>, GetStaffUtilizationReportQueryHandler>();
         services.AddEndpoints(Presentation.AssemblyReference.Assembly);
 
         return services;

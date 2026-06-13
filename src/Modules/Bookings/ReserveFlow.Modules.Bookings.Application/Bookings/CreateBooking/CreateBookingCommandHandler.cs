@@ -12,6 +12,7 @@ namespace ReserveFlow.Modules.Bookings.Application.Bookings.CreateBooking;
 public sealed class CreateBookingCommandHandler(
     IBookingRepository bookingRepository,
     IBookingAvailabilityChecker availabilityChecker,
+    ITenantBookingGate tenantBookingGate,
     IBookingPolicyRepository bookingPolicyRepository,
     IBookingHistoryRepository bookingHistoryRepository,
     ICustomerRepository customerRepository,
@@ -32,6 +33,15 @@ public sealed class CreateBookingCommandHandler(
             {
                 return BookingResponse.FromBooking(existingBooking);
             }
+        }
+
+        bool canAcceptPublicBooking = await tenantBookingGate.CanAcceptPublicBookingAsync(
+            command.TenantId,
+            cancellationToken);
+
+        if (!canAcceptPublicBooking)
+        {
+            throw new InvalidOperationException("Tenant cannot accept public bookings.");
         }
 
         BookingPolicy? policy = await bookingPolicyRepository.GetByTenantIdAsync(

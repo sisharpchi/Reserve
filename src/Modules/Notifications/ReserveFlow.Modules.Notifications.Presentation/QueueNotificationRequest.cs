@@ -5,4 +5,6 @@ internal sealed record QueueNotificationRequest(
     string Channel,
     string Recipient,
     string Subject,
-    string Body);
+    string Body,
+    DateTime? DeliverAtUtc = null,
+    string? CorrelationKey = null);

@@ -3,10 +3,12 @@ using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using ReserveFlow.Common.Application.Messaging;
+using ReserveFlow.Common.Application.Pagination;
 using ReserveFlow.Common.Presentation.Endpoints;
 using ReserveFlow.Modules.Catalog.Application.Services;
 using ReserveFlow.Modules.Catalog.Application.Services.CreateService;
 using ReserveFlow.Modules.Catalog.Application.Services.DeactivateService;
+using ReserveFlow.Modules.Catalog.Application.Services.GetActiveService;
 using ReserveFlow.Modules.Catalog.Application.Services.GetActiveServices;
 using ReserveFlow.Modules.Catalog.Application.Services.GetService;
 using ReserveFlow.Modules.Catalog.Application.Services.GetServices;
@@ -32,8 +34,9 @@ public static class CatalogModule
         services.AddScoped<ICommandHandler<CreateServiceCommand, ServiceResponse>, CreateServiceCommandHandler>();
         services.AddScoped<ICommandHandler<UpdateServiceCommand, ServiceResponse?>, UpdateServiceCommandHandler>();
         services.AddScoped<ICommandHandler<DeactivateServiceCommand, ServiceResponse?>, DeactivateServiceCommandHandler>();
+        services.AddScoped<IQueryHandler<GetActiveServiceQuery, ServiceResponse?>, GetActiveServiceQueryHandler>();
         services.AddScoped<IQueryHandler<GetActiveServicesQuery, IReadOnlyList<ServiceResponse>>, GetActiveServicesQueryHandler>();
-        services.AddScoped<IQueryHandler<GetServicesQuery, IReadOnlyList<ServiceResponse>>, GetServicesQueryHandler>();
+        services.AddScoped<IQueryHandler<GetServicesQuery, PagedResponse<ServiceResponse>>, GetServicesQueryHandler>();
         services.AddScoped<IQueryHandler<GetServiceQuery, ServiceResponse?>, GetServiceQueryHandler>();
         services.AddEndpoints(Presentation.AssemblyReference.Assembly);
 

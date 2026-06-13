@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Modules\Identity\ReserveFlow.Modules.Identity.Infrastructure\ReserveFlow.Modules.Identity.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Modules\Tenants\ReserveFlow.Modules.Tenants.Infrastructure\ReserveFlow.Modules.Tenants.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Modules\Catalog\ReserveFlow.Modules.Catalog.Infrastructure\ReserveFlow.Modules.Catalog.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Modules\Staffing\ReserveFlow.Modules.Staffing.Infrastructure\ReserveFlow.Modules.Staffing.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Modules\Resources\ReserveFlow.Modules.Resources.Infrastructure\ReserveFlow.Modules.Resources.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Modules\Scheduling\ReserveFlow.Modules.Scheduling.Infrastructure\ReserveFlow.Modules.Scheduling.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Modules\Bookings\ReserveFlow.Modules.Bookings.Infrastructure\ReserveFlow.Modules.Bookings.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Modules\Notifications\ReserveFlow.Modules.Notifications.Infrastructure\ReserveFlow.Modules.Notifications.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Modules\Audit\ReserveFlow.Modules.Audit.Infrastructure\ReserveFlow.Modules.Audit.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Modules\Reporting\ReserveFlow.Modules.Reporting.Infrastructure\ReserveFlow.Modules.Reporting.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Modules\Integrations\ReserveFlow.Modules.Integrations.Infrastructure\ReserveFlow.Modules.Integrations.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="appsettings.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+</Project>

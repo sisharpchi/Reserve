@@ -8,19 +8,19 @@
   "roles": {
     "realm": [
       {
-        "name": "SystemAdmin",
+        "name": "platform-admin",
         "description": "Platform administrator"
       },
       {
-        "name": "TenantAdmin",
+        "name": "tenant-admin",
         "description": "Tenant administrator"
       },
       {
-        "name": "Staff",
+        "name": "staff",
         "description": "Staff user"
       },
       {
-        "name": "Customer",
+        "name": "customer",
         "description": "Customer user"
       }
     ]
@@ -48,6 +48,25 @@
       "name": "ReserveFlow API",
       "enabled": true,
       "bearerOnly": true
+    },
+    {
+      "clientId": "reserveflow-admin",
+      "name": "ReserveFlow Backend Admin Client",
+      "enabled": true,
+      "publicClient": false,
+      "secret": "reserveflow-admin-secret",
+      "serviceAccountsEnabled": true,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "implicitFlowEnabled": false,
+      "serviceAccountClientRoles": {
+        "realm-management": [
+          "manage-users",
+          "query-users",
+          "view-realm",
+          "view-users"
+        ]
+      }
     }
   ],
   "users": [
@@ -66,7 +85,7 @@
         }
       ],
       "realmRoles": [
-        "SystemAdmin"
+        "platform-admin"
       ]
     },
     {
@@ -84,7 +103,7 @@
         }
       ],
       "realmRoles": [
-        "TenantAdmin"
+        "tenant-admin"
       ]
     }
   ]

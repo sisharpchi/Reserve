@@ -68,6 +68,23 @@ public sealed class TenantCategory : Entity
         return normalizedSlug;
     }
 
+    public void Update(string name, string slug, int sortOrder)
+    {
+        string normalizedName = NormalizeRequired(name, "Tenant category name");
+        string normalizedSlug = NormalizeSlug(slug);
+
+        if (sortOrder < 0)
+        {
+            throw new InvalidOperationException("Tenant category sort order cannot be negative.");
+        }
+
+        Name = normalizedName;
+        Slug = normalizedSlug;
+        SortOrder = sortOrder;
+
+        RaiseDomainEvent(new TenantCategoryUpdatedDomainEvent(Id, Slug, Name));
+    }
+
     private static string NormalizeRequired(string value, string fieldName)
     {
         if (string.IsNullOrWhiteSpace(value))

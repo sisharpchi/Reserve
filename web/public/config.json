@@ -1,0 +1,8 @@
+{
+  "apiBaseUrl": "https://localhost:7207",
+  "keycloak": {
+    "url": "http://localhost:18080",
+    "realm": "reserveflow",
+    "clientId": "reserveflow-web"
+  }
+}

@@ -87,25 +87,63 @@ Current user response:
 
 `POST /api/auth/sync-user` creates or updates the local ReserveFlow user profile from validated Keycloak claims. It does not create passwords or issue tokens.
 
-The Identity module may expose admin-only user provisioning endpoints, but they must call Keycloak Admin REST API from backend code. The Angular frontend must never hold Keycloak admin credentials.
+Admin-only provisioning endpoints call Keycloak Admin REST API from backend code. The Angular frontend must never hold Keycloak admin credentials.
 
 ## Platform Admin APIs
 
 ```http
-GET    /api/platform/categories
+GET    /api/platform/categories?pageNumber=1&pageSize=20&search=clinic&isActive=true&sortBy=sortOrder&sortDirection=asc
 POST   /api/platform/categories
 PUT    /api/platform/categories/{id}
 
-GET    /api/platform/tenants
+GET    /api/platform/tenants?pageNumber=1&pageSize=20&categoryId={categoryId}&search=smile&status=Active&sortBy=name&sortDirection=asc
 POST   /api/platform/tenants
 GET    /api/platform/tenants/{id}
 PUT    /api/platform/tenants/{id}
 POST   /api/platform/tenants/{id}/activate
 POST   /api/platform/tenants/{id}/suspend
 POST   /api/platform/tenants/{id}/assign-owner
+POST   /api/platform/tenants/{id}/owner/invite
 
 GET    /api/platform/usage
-GET    /api/platform/audit-logs
+GET    /api/platform/audit-logs?pageNumber=1&pageSize=20&tenantId={tenantId}&action=TenantSuspended&entityName=Tenant&fromUtc=2026-06-01T00:00:00Z&toUtc=2026-06-30T23:59:59Z&sortBy=occurredOnUtc&sortDirection=desc
+```
+
+`POST /api/platform/tenants/{id}/assign-owner` is the manual fallback when a Keycloak subject is already known.
+
+`POST /api/platform/tenants/{id}/owner/invite` is the normal backend provisioning flow. It:
+
+- uses the backend-only Keycloak Admin client credentials
+- finds or creates the Keycloak user by email
+- maps the Keycloak `tenant-admin` realm role
+- optionally sends Keycloak required-action email when SMTP/config is enabled
+- creates or updates local `identity.users`
+- creates or updates local `identity.tenant_users` with role `TenantAdmin`
+
+Example request:
+
+```json
+{
+  "email": "owner@smileclinic.example",
+  "displayName": "Smile Clinic Owner"
+}
+```
+
+Example response:
+
+```json
+{
+  "tenantId": "uuid",
+  "userId": "uuid",
+  "keycloakSubject": "keycloak-user-id",
+  "email": "owner@smileclinic.example",
+  "displayName": "Smile Clinic Owner",
+  "role": "TenantAdmin",
+  "createdInKeycloak": true,
+  "invitationEmailSent": false,
+  "localUserCreated": true,
+  "membershipCreated": true
+}
 ```
 
 Required permissions:
@@ -115,30 +153,36 @@ Required permissions:
 - `Platform.Audit.View`
 - `Platform.Usage.View`
 
+Platform category, tenant, and audit log list endpoints return the same paged response shape as admin tables. `pageSize` is capped by the backend at `100`. Filters are optional:
+
+- Categories: `search`, `isActive`, `sortBy=sortOrder|name|slug|createdAtUtc`, `sortDirection=asc|desc`.
+- Tenants: `categoryId`, `search`, `status=Pending|Active|Suspended|Deleted`, `sortBy=name|slug|status|categoryId|createdAtUtc`, `sortDirection=asc|desc`.
+- Audit logs: `tenantId`, `action`, `entityName`, `fromUtc`, `toUtc`, `sortBy=occurredOnUtc|tenantId|action|entityName`, `sortDirection=asc|desc`.
+
 ## Tenant Admin APIs
 
 ```http
-GET    /api/admin/services
+GET    /api/admin/services?pageNumber=1&pageSize=20&search=dental&isActive=true&sortBy=name&sortDirection=asc
 POST   /api/admin/services
 GET    /api/admin/services/{id}
 PUT    /api/admin/services/{id}
 DELETE /api/admin/services/{id}
 
-GET    /api/admin/staff
+GET    /api/admin/staff?pageNumber=1&pageSize=20&search=ali&isActive=true&sortBy=displayName&sortDirection=asc
 POST   /api/admin/staff
 GET    /api/admin/staff/{id}
 PUT    /api/admin/staff/{id}
 POST   /api/admin/staff/{id}/working-hours
 POST   /api/admin/staff/{id}/unavailable-periods
 
-GET    /api/admin/resources
+GET    /api/admin/resources?pageNumber=1&pageSize=20&search=room&resourceType=room&isActive=true&sortBy=name&sortDirection=asc
 POST   /api/admin/resources
 GET    /api/admin/resources/{id}
 PUT    /api/admin/resources/{id}
 POST   /api/admin/resources/{id}/working-hours
 POST   /api/admin/resources/{id}/unavailable-periods
 
-GET    /api/admin/bookings
+GET    /api/admin/bookings?pageNumber=1&pageSize=20&status=Confirmed&fromUtc=2026-06-01T00:00:00Z&toUtc=2026-06-30T23:59:59Z&sortBy=startsAtUtc&sortDirection=desc
 GET    /api/admin/bookings/{id}
 POST   /api/admin/bookings/{id}/cancel
 POST   /api/admin/bookings/{id}/reschedule
@@ -148,9 +192,32 @@ POST   /api/admin/bookings/{id}/no-show
 GET    /api/admin/reports/daily
 GET    /api/admin/reports/staff-utilization
 GET    /api/admin/reports/no-show
-GET    /api/admin/notifications
-GET    /api/admin/module-messages
+GET    /api/admin/notifications?pageNumber=1&pageSize=20&status=Pending&channel=Email&search=customer@example.com&sortBy=createdAtUtc&sortDirection=desc
+GET    /api/admin/module-messages?pageNumber=1&pageSize=20&status=Failed&type=BookingCreated&sortBy=occurredOnUtc&sortDirection=desc
 ```
+
+The main admin table endpoints return a paged response:
+
+```json
+{
+  "items": [],
+  "pageNumber": 1,
+  "pageSize": 20,
+  "totalCount": 0,
+  "totalPages": 0,
+  "hasPreviousPage": false,
+  "hasNextPage": false
+}
+```
+
+`pageSize` is capped by the backend at `100` for MVP admin screens. List filters are optional and always remain scoped to the current tenant:
+
+- Services: `search`, `isActive`, `sortBy=name|durationMinutes|price|createdAtUtc`, `sortDirection=asc|desc`.
+- Staff: `search`, `isActive`, `sortBy=displayName|email|createdAtUtc`, `sortDirection=asc|desc`.
+- Resources: `search`, `resourceType`, `isActive`, `sortBy=name|resourceType|capacity|createdAtUtc`, `sortDirection=asc|desc`.
+- Bookings: `status`, `fromUtc`, `toUtc`, `sortBy=startsAtUtc|endsAtUtc|status`, `sortDirection=asc|desc`.
+- Notifications: `status`, `channel`, `search`, `sortBy=createdAtUtc|deliverAtUtc|sentAtUtc|status|channel`, `sortDirection=asc|desc`.
+- Module messages: `status=Pending|Processed|Failed`, `type`, `sortBy=occurredOnUtc|processedOnUtc|type|status|retryCount`, `sortDirection=asc|desc`.
 
 Required permissions:
 

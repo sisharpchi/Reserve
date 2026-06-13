@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using ReserveFlow.Common.Application.Messaging;
+using ReserveFlow.Common.Application.Pagination;
 using ReserveFlow.Common.Presentation.Endpoints;
 using ReserveFlow.Modules.Resources.Application.Resources;
 using ReserveFlow.Modules.Resources.Application.Resources.CreateResource;
@@ -33,7 +34,7 @@ public static class ResourcesModule
         services.AddScoped<ICommandHandler<UpdateResourceCommand, ResourceResponse?>, UpdateResourceCommandHandler>();
         services.AddScoped<ICommandHandler<DeactivateResourceCommand, ResourceResponse?>, DeactivateResourceCommandHandler>();
         services.AddScoped<IQueryHandler<GetActiveResourcesQuery, IReadOnlyList<ResourceResponse>>, GetActiveResourcesQueryHandler>();
-        services.AddScoped<IQueryHandler<GetResourcesQuery, IReadOnlyList<ResourceResponse>>, GetResourcesQueryHandler>();
+        services.AddScoped<IQueryHandler<GetResourcesQuery, PagedResponse<ResourceResponse>>, GetResourcesQueryHandler>();
         services.AddScoped<IQueryHandler<GetResourceQuery, ResourceResponse?>, GetResourceQueryHandler>();
         services.AddEndpoints(Presentation.AssemblyReference.Assembly);
 

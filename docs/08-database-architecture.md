@@ -242,6 +242,24 @@ Migration rules:
 - Production release should use an explicit migration runner, not automatic migrations inside normal API startup.
 - Seed data should be deterministic and environment-aware.
 
+## Local Database Startup
+
+For local Docker Compose startup, the API waits for the PostgreSQL container health check before it starts. The development schema initializer also retries transient PostgreSQL startup failures such as `57P03: the database system is starting up`, short socket refusals, and timeouts.
+
+This retry is a local/development resilience feature. It should not replace a production migration runner or deployment-level dependency checks.
+
+## Migration Runner Strategy
+
+Production deployments should apply EF Core migrations with `ReserveFlow.MigrationService` before starting or rolling the API containers. The migrator is a one-shot .NET 8 console process that registers every module infrastructure project and applies migrations in module order: identity, platform, catalog, staffing, resources, scheduling, bookings, notifications, audit, reporting, and integrations.
+
+Local Docker Compose exposes this as a profile:
+
+```powershell
+docker compose --profile migrations run --rm reserveflow.migrations
+```
+
+The API may still create schemas and seed demo data in development, but production release flow should keep schema changes explicit, observable, and separate from normal request-serving startup.
+
 ## Module DbContext Rule
 
 Each module has a database context with its default schema:

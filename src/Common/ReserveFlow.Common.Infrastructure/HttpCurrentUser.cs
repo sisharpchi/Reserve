@@ -32,6 +32,18 @@ public sealed class HttpCurrentUser(IHttpContextAccessor httpContextAccessor) : 
         }
     }
 
+    public Guid? StaffMemberId
+    {
+        get
+        {
+            string? value = GetClaimValue("staff_member_id") ?? GetClaimValue("staff_id");
+
+            return Guid.TryParse(value, out Guid staffMemberId)
+                ? staffMemberId
+                : null;
+        }
+    }
+
     public string? KeycloakSubject => NormalizeOptional(GetClaimValue("sub") ?? GetClaimValue(ClaimTypes.NameIdentifier));
 
     public string? Email => NormalizeOptional(GetClaimValue("email") ?? GetClaimValue(ClaimTypes.Email))?.ToLowerInvariant();

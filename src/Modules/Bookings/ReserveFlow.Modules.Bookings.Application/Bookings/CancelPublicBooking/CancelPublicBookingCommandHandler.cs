@@ -18,6 +18,7 @@ public sealed class CancelPublicBookingCommandHandler(
         CancellationToken cancellationToken = default)
     {
         Booking? booking = await bookingRepository.FindByPublicLookupAsync(
+            command.TenantId,
             command.PublicReference,
             command.AccessToken,
             cancellationToken);

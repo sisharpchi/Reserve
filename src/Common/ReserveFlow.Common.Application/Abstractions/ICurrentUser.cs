@@ -4,6 +4,8 @@ public interface ICurrentUser
 {
     Guid? UserId { get; }
 
+    Guid? StaffMemberId { get; }
+
     string? KeycloakSubject { get; }
 
     string? Email { get; }

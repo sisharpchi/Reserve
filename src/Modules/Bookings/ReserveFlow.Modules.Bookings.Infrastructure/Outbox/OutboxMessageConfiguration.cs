@@ -13,6 +13,9 @@ internal sealed class OutboxMessageConfiguration : IEntityTypeConfiguration<Outb
 
         builder.HasKey(message => message.Id);
 
+        builder.Property(message => message.Id)
+            .HasColumnName("id");
+
         builder.Property(message => message.TenantId)
             .HasColumnName("tenant_id");
 

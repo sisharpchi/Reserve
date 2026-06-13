@@ -14,17 +14,37 @@ services:
       DatabaseInitializer__Enabled: "true"
       DatabaseInitializer__CreateDatabaseIfMissing: "true"
       DatabaseInitializer__MaintenanceDatabase: postgres
+      DatabaseInitializer__StartupRetryAttempts: "30"
+      DatabaseInitializer__StartupRetryDelayMilliseconds: "1000"
       Identity__Authority: http://reserveflow.identity:8080/realms/reserveflow
       Identity__MetadataAddress: http://reserveflow.identity:8080/realms/reserveflow/.well-known/openid-configuration
       Identity__Audience: reserveflow-api
       Keycloak__HealthUrl: http://reserveflow.identity:8080/health/ready
+      Keycloak__Admin__BaseUrl: http://reserveflow.identity:8080
+      Keycloak__Admin__Realm: reserveflow
+      Keycloak__Admin__ClientId: reserveflow-admin
+      Keycloak__Admin__ClientSecret: reserveflow-admin-secret
+      Keycloak__Admin__TenantAdminRealmRole: tenant-admin
     ports:
       - "5080:8080"
     depends_on:
       reserveflow.database:
-        condition: service_started
+        condition: service_healthy
       reserveflow.identity:
         condition: service_started
+
+  reserveflow.migrations:
+    image: reserveflow-migrations
+    container_name: ReserveFlow.Migrations
+    profiles: ["migrations"]
+    build:
+      context: .
+      dockerfile: src/Tools/ReserveFlow.MigrationService/Dockerfile
+    environment:
+      ConnectionStrings__Database: Host=reserveflow.database;Port=5432;Database=reserveflow;Username=postgres;Password=postgres
+    depends_on:
+      reserveflow.database:
+        condition: service_healthy
 
   reserveflow.database:
     image: postgres:16
@@ -37,6 +57,12 @@ services:
       - ./.containers/postgres:/var/lib/postgresql/data
     ports:
       - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d reserveflow"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
 
   reserveflow.identity:
     image: quay.io/keycloak/keycloak:25.0
@@ -50,6 +76,7 @@ services:
     volumes:
       - ./.containers/keycloak:/opt/keycloak/data
       - ./.files/keycloak:/opt/keycloak/data/import
+      # - ./web-keycloak-theme:/opt/keycloak/themes/reserveflow-theme
     ports:
       - "18080:8080"
 

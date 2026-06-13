@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using ReserveFlow.Common.Application.Messaging;
+using ReserveFlow.Common.Application.Pagination;
 using ReserveFlow.Common.Presentation.Endpoints;
 using ReserveFlow.Modules.Staffing.Application.StaffMembers;
 using ReserveFlow.Modules.Staffing.Application.StaffMembers.CreateStaffMember;
@@ -33,7 +34,7 @@ public static class StaffingModule
         services.AddScoped<ICommandHandler<UpdateStaffMemberCommand, StaffMemberResponse?>, UpdateStaffMemberCommandHandler>();
         services.AddScoped<ICommandHandler<DeactivateStaffMemberCommand, StaffMemberResponse?>, DeactivateStaffMemberCommandHandler>();
         services.AddScoped<IQueryHandler<GetActiveStaffMembersQuery, IReadOnlyList<StaffMemberResponse>>, GetActiveStaffMembersQueryHandler>();
-        services.AddScoped<IQueryHandler<GetStaffMembersQuery, IReadOnlyList<StaffMemberResponse>>, GetStaffMembersQueryHandler>();
+        services.AddScoped<IQueryHandler<GetStaffMembersQuery, PagedResponse<StaffMemberResponse>>, GetStaffMembersQueryHandler>();
         services.AddScoped<IQueryHandler<GetStaffMemberQuery, StaffMemberResponse?>, GetStaffMemberQueryHandler>();
         services.AddEndpoints(Presentation.AssemblyReference.Assembly);
 

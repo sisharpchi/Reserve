@@ -8,4 +8,6 @@ public sealed record QueueNotificationCommand(
     NotificationChannel Channel,
     string Recipient,
     string Subject,
-    string Body) : ICommand<NotificationResponse>;
+    string Body,
+    DateTime? DeliverAtUtc = null,
+    string? CorrelationKey = null) : ICommand<NotificationResponse>;
